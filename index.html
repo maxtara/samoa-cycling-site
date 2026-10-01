@@ -3,15 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<title>Samoa — 5-Day Cycling Adventure</title>
+<title>Samoa — Cycling Map</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="trip-data.js"></script>
+<script src="osm-base.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; overflow: hidden; height: 100vh; }
 
-  /* Burger button */
   .burger { position: fixed; top: 12px; left: 12px; z-index: 2000; width: 44px; height: 44px; border-radius: 10px;
     background: rgba(26,82,118,0.92); border: none; cursor: pointer; display: flex; flex-direction: column;
     align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); backdrop-filter: blur(4px); }
@@ -21,9 +21,6 @@
   .burger.open span:nth-child(2) { opacity: 0; }
   .burger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
 
-  /* Title pill */
-
-  /* Side menu */
   .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4);
     z-index: 1800; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
   .menu-overlay.open { opacity: 1; pointer-events: auto; }
@@ -37,40 +34,29 @@
   .side-menu a { display: block; color: #aed6f1; text-decoration: none; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 15px; }
   .side-menu a:hover { color: white; }
   .side-menu a .link-sub { font-size: 12px; opacity: 0.6; display: block; }
-  .side-menu .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
-  .side-menu .info-item { background: rgba(255,255,255,0.08); padding: 10px; border-radius: 8px; }
-  .side-menu .info-item .label { font-size: 11px; opacity: 0.6; text-transform: uppercase; }
-  .side-menu .info-item .value { font-size: 16px; font-weight: 700; margin-top: 2px; }
-  .side-menu .info-item .value small { font-weight: 400; font-size: 12px; }
+  .side-menu p { font-size: 13px; opacity: 0.85; line-height: 1.5; margin-bottom: 8px; }
 
-  /* Map */
   #map { width: 100%; height: 60vh; }
+  #map.leaflet-container { background: #aad3df; }
 
-  /* Legend - compact floating bar at bottom of map */
   .legend { position: absolute; bottom: 0; left: 0; right: 0; z-index: 1000;
     display: flex; gap: 10px; flex-wrap: wrap; padding: 6px 12px;
     background: rgba(255,255,255,0.92); backdrop-filter: blur(4px); font-size: 11px; }
   .legend-item { display: flex; align-items: center; gap: 3px; }
   .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .leaflet-bottom { bottom: 26px; }
 
-  /* Sidebar / itinerary panel */
   #sidebar { height: 40vh; overflow-y: auto; padding: 12px; background: #f0f4f8; }
 
-  /* Stop cards */
   .stop-card { background: white; border-radius: 10px; padding: 12px 14px; margin: 8px 0;
     box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer; border-left: 5px solid #2e86c1; transition: transform 0.15s; }
   .stop-card:hover { transform: translateX(4px); }
   .stop-card.active { border-left-color: #e67e22; background: #fef9e7; }
-  .stop-card.arrival { border-left-color: #27ae60; }
-  .stop-card.depart { border-left-color: #e74c3c; }
-  .stop-card.hard { border-left-color: #e67e22; }
   .stop-card h3 { font-size: 14px; color: #1a5276; margin-bottom: 4px; }
   .stop-card .meta { font-size: 11px; color: #666; margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
   .stop-card .meta span { display: inline-block; background: #eaf2f8; padding: 2px 7px; border-radius: 10px; }
-  .stop-card .meta span.warn { background: #fef3cd; }
   .stop-card .details { font-size: 12px; color: #333; line-height: 1.5; }
   .stop-card .accom { font-size: 11px; color: #1a7a5c; margin-top: 6px; padding: 5px 8px; background: #e8f8f5; border-radius: 6px; }
-
   .stop-card .when { font-size: 12px; color: #555; margin-bottom: 4px; }
   .stop-card .warn, .popup .warn { font-size: 12px; background: #fef3cd; padding: 5px 8px; border-radius: 6px; margin-top: 6px; }
   .stop-card .links, .popup .links { font-size: 12px; margin-top: 6px; }
@@ -84,43 +70,35 @@
   .popup .details { margin-bottom: 4px; }
   .popup .accom { font-size: 12px; background: #e8f8f5; padding: 5px 8px; border-radius: 4px; margin-top: 4px; }
 
-  /* Map container needs relative for legend positioning */
   #map-container { position: relative; }
+
+  /* GPS button + status */
+  /* Leaflet's layers icon is an external PNG; use an emoji so it shows offline */
+  .leaflet-control-layers-toggle { background-image: none !important; text-align: center; line-height: 36px; font-size: 22px; text-decoration: none; }
+  .leaflet-touch .leaflet-control-layers-toggle { line-height: 44px; }
+  .leaflet-control-layers-toggle::after { content: "🗺️"; }
+  .loc-btn { width: 34px; height: 34px; display: flex !important; align-items: center; justify-content: center; background: #fff; color: #555; cursor: pointer; }
+  .loc-btn svg { width: 20px; height: 20px; }
+  .loc-btn.wait { color: #2e86c1; animation: pulse 1s infinite alternate; }
+  .loc-btn.on { color: #1a73e8; }
+  .loc-btn.follow { color: #fff; background: #1a73e8; }
+  .loc-btn.follow:hover { background: #1765cc; }
+  @keyframes pulse { from { opacity: 1; } to { opacity: 0.35; } }
+  #gpsStatus { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 1000; display: none;
+    background: rgba(26,115,232,0.92); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 12px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3); white-space: nowrap; pointer-events: none; }
+  #gpsStatus.err { background: rgba(192,57,43,0.95); white-space: normal; max-width: 80vw; text-align: center; }
 </style>
 </head>
 <body>
 
-<!-- Burger button -->
 <button class="burger" id="burgerBtn" onclick="toggleMenu()">
   <span></span><span></span><span></span>
 </button>
-
-<!-- Title pill -->
-<!-- Menu overlay -->
 <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
 
-<!-- Side menu -->
 <div class="side-menu" id="sideMenu">
-  <h2>🌴 Samoa Cycling Trip</h2>
-
-  <div class="menu-section">
-    <h3>Trip Stats</h3>
-    <div class="info-grid">
-      <div class="info-item"><div class="label">Distance</div><div class="value">~210km</div></div>
-      <div class="info-item"><div class="label">Riding Days</div><div class="value">5 <small>Mon–Fri</small></div></div>
-      <div class="info-item"><div class="label">Elevation</div><div class="value">~1,150m</div></div>
-      <div class="info-item"><div class="label">Dates</div><div class="value">Oct 3–11</div></div>
-    </div>
-  </div>
-
-  <div class="menu-section">
-    <h3>Timezone</h3>
-    <div class="info-grid">
-      <div class="info-item"><div class="label">Samoa</div><div class="value">UTC+13</div></div>
-      <div class="info-item"><div class="label">Canberra</div><div class="value">UTC+11</div></div>
-    </div>
-    <p style="font-size:13px;opacity:0.8;margin-top:6px;">Samoa is 2 hours ahead. Minimal jet lag!</p>
-  </div>
+  <h2>🌴 Samoa Cycling Map</h2>
 
   <div class="menu-section">
     <h3>Pages</h3>
@@ -128,18 +106,19 @@
     <a href="activities.html">🎯 Activities by day<span class="link-sub">Optional stops along each day's ride</span></a>
   </div>
 
-<div class="menu-section">
-    <h3>Key Info</h3>
-    <a href="#">🚢 Ferry: no booking needed<span class="link-sub">Mon 5: 10:00 out • Sat 10: 12:00 back. ~WST 40 for 2 people + 2 bikes each way</span></a>
-    <a href="#">🚲 Bikes: Outdoor Samoa, Mulifanua<span class="link-sub">Pickup Mon 08:00 • Return Sat by 16:00. Closed Sundays</span></a>
-    <a href="#">🌡️ Weather: 26–30°C, humid. Water 28°C<span class="link-sub">Ride early. Sunset ~18:25</span></a>
-    <a href="https://cyclejourneys.co.nz/cycle-samoa/faq/" target="_blank">&#10067; FAQ (Cycle Journeys)<span class="link-sub">Common questions about cycling in Samoa</span></a>
+  <div class="menu-section">
+    <h3>About this map</h3>
+    <p>The background map (coast, roads, buildings, villages, shops, churches, water) is built into this page, so it works with no mobile data.</p>
+    <p>On the website, tap <b>⬇ Save offline</b> to download one self-contained file to your phone, then open it from Downloads.</p>
+    <p>📍 button: tap once to show &amp; follow your GPS position, again to stop. Dragging the map pauses following; tap to re-centre.</p>
+    <p>Top right: switch between 📴 Offline map and 🌐 Online map (needs internet). Your choice is remembered.</p>
+    <p id="dataInfo" style="opacity:0.6"></p>
   </div>
 </div>
 
-<!-- Map -->
 <div id="map-container">
   <div id="map"></div>
+  <div id="gpsStatus"></div>
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#27ae60"></span> Upolu base</div>
     <div class="legend-item"><span class="legend-dot" style="background:#2e86c1"></span> Overnight (0 = resort, 1–5 = riding day)</div>
@@ -151,7 +130,6 @@
   </div>
 </div>
 
-<!-- Itinerary sidebar -->
 <div id="sidebar"></div>
 
 <script>
@@ -160,15 +138,390 @@ function toggleMenu() {
   document.getElementById('menuOverlay').classList.toggle('open');
   document.getElementById('burgerBtn').classList.toggle('open');
 }
-// Savai'i center
-const map = L.map('map').setView([-13.63, -172.35], 11);
-// Standard OSM tiles need an http(s) referrer; saved/local copies use the HOT style instead.
+
+const map = L.map('map', {preferCanvas: true, maxZoom: 19, minZoom: 8}).setView([-13.63, -172.35], 11);
+L.control.scale({imperial: false, position: 'topright'}).addTo(map);
+
+// ===== Offline vector basemap: OSM data from osm-base.js drawn client-side into canvas tiles =====
+const OfflineBase = (function () {
+  const B = window.OSM_BASE;
+  if (!B) return null;
+  const TS = 256, D2R = Math.PI / 180;
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const wx = lng => (lng + 180) / 360 * TS;
+  const wy = lat => { const s = Math.sin(lat * D2R); return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * TS; };
+
+  // Project everything once to zoom-0 world pixels (Web Mercator) with a bbox per item.
+  function prep(rings, p) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    const r = rings.map(ring => {
+      const a = new Float64Array(ring.length * 2);
+      for (let i = 0; i < ring.length; i++) {
+        const x = wx(ring[i][0]), y = wy(ring[i][1]);
+        a[2 * i] = x; a[2 * i + 1] = y;
+        if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+      return a;
+    });
+    return {r, bb: [x0, y0, x1, y1], p};
+  }
+  function load(fc) {
+    const out = [];
+    fc.features.forEach(f => {
+      const g = f.geometry, p = f.properties || {};
+      if (g.type === 'Polygon') out.push(prep(g.coordinates, p));
+      else if (g.type === 'MultiPolygon') g.coordinates.forEach(poly => out.push(prep(poly, p)));
+      else if (g.type === 'LineString') out.push(prep([g.coordinates], p));
+      else if (g.type === 'MultiLineString') out.push(prep(g.coordinates, p));
+      else if (g.type === 'Point') out.push({x: wx(g.coordinates[0]), y: wy(g.coordinates[1]), p});
+    });
+    return out;
+  }
+  const D = {};
+  ['land', 'areas', 'waterways', 'buildings', 'roads', 'places', 'pois'].forEach(k => { D[k] = load(B[k]); });
+
+  // ---- Style ----
+  const LAND = '#f4f1ea', COAST = '#8fbfcc', SEA = '#aad3df';
+  const AREA = {
+    aerodrome: {f: '#e9e7e2', min: 11}, residential: {f: '#e8e4e0', min: 12}, commercial: {f: '#f2dad9', min: 12},
+    industrial: {f: '#ebdbe8', min: 12}, religious: {f: '#dcd8d3', min: 13}, school: {f: '#fbf7d5', min: 13},
+    hospital: {f: '#fbe3e3', min: 13}, farm: {f: '#eef0d5', min: 11}, grass: {f: '#d8eec0', min: 11},
+    wood: {f: '#c8e0b5', min: 10}, green: {f: '#cdf2c9', min: 13}, wetland: {f: '#d4e8dc', min: 11},
+    rock: {f: '#e6ddd2', min: 11}, beach: {f: '#fbefc0', min: 11}, reef: {f: 'rgba(110,180,195,0.35)', s: '#7fb3c0', min: 10},
+    pitch: {f: '#b9e5cf', s: '#9fd4b8', min: 14}, parking: {f: '#ececec', s: '#d6d6d6', min: 15}, apron: {f: '#dadae0', min: 12},
+    water: {f: SEA, min: 10}
+  };
+  // w: [[zoom, width px], ...] interpolated exponentially; k = casing colour; d = dash
+  const ROAD = {
+    taxiway: {min: 13, c: '#d2d2dc', w: [[13, 1], [16, 8], [19, 40]]},
+    runway: {min: 10, c: '#c4c4cf', w: [[10, 2], [13, 7], [16, 50], [19, 300]]},
+    path: {min: 14, c: '#d9735f', d: [3, 3], w: [[14, 0.9], [17, 1.6], [19, 2.4]]},
+    footway: {min: 15, c: '#d9735f', d: [2, 3], w: [[15, 0.9], [18, 1.8]]},
+    track: {min: 12, c: '#9b7b4d', d: [6, 3], w: [[12, 0.8], [15, 1.6], [18, 3], [19, 4]]},
+    service: {min: 14, c: '#ffffff', k: '#b8b8b8', w: [[14, 1.2], [16, 4], [18, 10], [19, 16]]},
+    residential: {min: 12, c: '#ffffff', k: '#aaaaaa', w: [[12, 1], [14, 3], [16, 8], [18, 20], [19, 34]]},
+    unclassified: {min: 11, c: '#ffffff', k: '#a0a0a0', w: [[11, 0.8], [13, 2], [15, 5.5], [17, 12], [19, 36]]},
+    tertiary: {min: 10, c: '#fffbe0', k: '#999999', w: [[10, 0.8], [12, 2], [14, 5], [16, 10], [18, 24], [19, 40]]},
+    secondary: {min: 9, c: '#f7f0a0', k: '#a8a050', w: [[9, 1], [12, 2.5], [14, 6], [16, 11], [18, 26], [19, 44]]},
+    primary: {min: 8, c: '#f9c983', k: '#b98232', w: [[8, 1], [10, 1.8], [12, 3], [14, 6.5], [16, 13], [18, 30], [19, 50]]}
+  };
+  const ROAD_ORDER = Object.keys(ROAD);
+  const WATERWAY = {river: {min: 10, c: '#76b3d0', w: [[10, 1], [13, 2], [16, 5], [19, 12]]},
+                    stream: {min: 13, c: '#86bed8', w: [[13, 0.7], [16, 1.6], [19, 3]]},
+                    reef: {min: 11, c: '#7fb3c0', w: [[11, 1], [16, 2]]}, beach: {min: 12, c: '#e8d48a', w: [[12, 1.5], [16, 4]]}};
+  function zw(stops, z) {
+    if (z <= stops[0][0]) return stops[0][1] * Math.pow(0.7, stops[0][0] - z);
+    for (let i = 1; i < stops.length; i++) {
+      if (z <= stops[i][0]) {
+        const [z0, w0] = stops[i - 1], [z1, w1] = stops[i];
+        return w0 * Math.pow(w1 / w0, (z - z0) / (z1 - z0));
+      }
+    }
+    return stops[stops.length - 1][1];
+  }
+
+  // ---- Geometry helpers ----
+  function trace(ctx, a, s, ox, oy, close) {
+    const n = a.length;
+    let lx = a[0] * s - ox, ly = a[1] * s - oy;
+    ctx.moveTo(lx, ly);
+    for (let i = 2; i < n; i += 2) {
+      const x = a[i] * s - ox, y = a[i + 1] * s - oy;
+      // Skip sub-pixel steps (keeps low zooms fast) but always draw the last point
+      if (i < n - 2 && Math.abs(x - lx) < 0.7 && Math.abs(y - ly) < 0.7) continue;
+      ctx.lineTo(x, y); lx = x; ly = y;
+    }
+    if (close) ctx.closePath();
+  }
+  const hit = (bb, q) => bb[0] <= q[2] && bb[2] >= q[0] && bb[1] <= q[3] && bb[3] >= q[1];
+
+  // ---- Labels: placed once per zoom over the whole map (so tiles agree), with collision detection ----
+  const mctx = document.createElement('canvas').getContext('2d');
+  const FONT = '-apple-system, "Segoe UI", Roboto, Arial, sans-serif';
+  const widthCache = {};
+  function charW(font, ch) {
+    const k = font + '|' + ch;
+    if (!(k in widthCache)) { mctx.font = font; widthCache[k] = mctx.measureText(ch).width; }
+    return widthCache[k];
+  }
+  const POI = {
+    church: {e: '⛪', min: 15}, fuel: {e: '⛽', min: 13, nm: 15}, water: {e: '🚰', min: 13, nm: 16}, spring: {e: '💧', min: 14, nm: 16},
+    shop: {e: '🛒', min: 14, nm: 16}, market: {e: '🛒', min: 13, nm: 15}, bike: {e: '🚲', min: 13, nm: 15},
+    atm: {e: '🏧', min: 13, nm: 16}, bank: {e: '🏦', min: 14, nm: 16}, hospital: {e: '🏥', min: 13, nm: 14}, pharmacy: {e: '💊', min: 14, nm: 16},
+    police: {e: '👮', min: 15, nm: 17}, post: {e: '✉️', min: 15, nm: 17}, toilets: {e: '🚻', min: 15},
+    food: {e: '🍴', min: 14, nm: 16}, ferry: {e: '⛴️', min: 12, nm: 13}, bus: {e: '🚌', min: 15, nm: 17},
+    hotel: {e: '🛏️', min: 14, nm: 15}, attraction: {e: '⭐', min: 13, nm: 14}, viewpoint: {e: '👁️', min: 14, nm: 15},
+    info: {e: 'ℹ️', min: 15, nm: 17}, peak: {e: '⛰️', min: 12, nm: 13}, cave: {e: '🕳️', min: 13, nm: 14}, waterfall: {e: '💦', min: 13, nm: 14}
+  };
+  const PLACE = {
+    town: {min: 8, size: z => z < 11 ? 13 : z < 13 ? 15 : 17, w: 700, c: '#222', pri: 0},
+    city: {min: 8, size: z => z < 11 ? 13 : z < 13 ? 15 : 17, w: 700, c: '#222', pri: 0},
+    island: {min: 9, size: z => z < 12 ? 12 : 14, w: 600, c: '#3d6f82', it: 1, pri: 0},
+    village: {min: 11, size: z => z < 13 ? 11 : z < 15 ? 13 : 15, w: 600, c: '#333', pri: 1},
+    islet: {min: 13, size: () => 11, w: 400, c: '#3d6f82', it: 1, pri: 2},
+    suburb: {min: 13, size: () => 12, w: 400, c: '#555', pri: 2},
+    hamlet: {min: 13, size: z => z < 15 ? 11 : 12, w: 400, c: '#444', pri: 2},
+    neighbourhood: {min: 14, size: () => 11, w: 400, c: '#555', pri: 3},
+    locality: {min: 14, size: () => 11, w: 400, c: '#666', it: 1, pri: 3},
+    isolated_dwelling: {min: 16, size: () => 10, w: 400, c: '#666', pri: 3}
+  };
+
+  const labelCache = {};
+  function labelsFor(z) {
+    if (labelCache[z]) return labelCache[z];
+    const s = Math.pow(2, z), CELL = 128, grid = new Map(), out = [];
+    const cells = (b, fn) => {
+      for (let cx = Math.floor(b[0] / CELL); cx <= Math.floor(b[2] / CELL); cx++)
+        for (let cy = Math.floor(b[1] / CELL); cy <= Math.floor(b[3] / CELL); cy++) if (fn(cx + ',' + cy)) return true;
+      return false;
+    };
+    const free = boxes => !boxes.some(b => cells(b, k => (grid.get(k) || []).some(o => hit(o, b))));
+    const take = boxes => boxes.forEach(b => cells(b, k => { (grid.get(k) || grid.set(k, []).get(k)).push(b); }));
+    const union = boxes => boxes.reduce((u, b) => [Math.min(u[0], b[0]), Math.min(u[1], b[1]), Math.max(u[2], b[2]), Math.max(u[3], b[3])], [Infinity, Infinity, -Infinity, -Infinity]);
+
+    function pointText(x, y, text, font, color, halo, dy) {
+      mctx.font = font;
+      const w = mctx.measureText(text).width, h = parseInt(font.match(/(\d+)px/)[1], 10);
+      const cy = y + (dy || 0);
+      const box = [x - w / 2 - 3, cy - h / 2 - 2, x + w / 2 + 3, cy + h / 2 + 2];
+      return {boxes: [box], item: {bb: box, t: 'text', x, y: cy, text, font, color, halo}};
+    }
+    // Places by priority
+    const places = D.places.filter(p => PLACE[p.p.k] && z >= PLACE[p.p.k].min).sort((a, b) => PLACE[a.p.k].pri - PLACE[b.p.k].pri);
+    const placeLabels = pri => places.filter(p => PLACE[p.p.k].pri === pri).forEach(p => {
+      const st = PLACE[p.p.k];
+      const L1 = pointText(p.x * s, p.y * s, p.p.n, (st.it ? 'italic ' : '') + st.w + ' ' + st.size(z) + 'px ' + FONT, st.c, 'rgba(255,255,255,0.9)');
+      if (free(L1.boxes)) { take(L1.boxes); out.push(L1.item); }
+    });
+    placeLabels(0); placeLabels(1);
+    // POI icons (always shown once zoomed in, if they fit)
+    const iconR = z >= 17 ? 10 : 8;
+    const poiShown = [];
+    D.pois.forEach(p => {
+      const st = POI[p.p.k];
+      if (!st || z < st.min) return;
+      const x = p.x * s, y = p.y * s, box = [x - iconR, y - iconR, x + iconR, y + iconR];
+      if (!free([box])) return;
+      take([box]); out.push({bb: box, t: 'icon', x, y, e: st.e, r: iconR, k: p.p.k}); poiShown.push(p);
+    });
+    placeLabels(2); placeLabels(3);
+    // Road names along the line
+    D.roads.forEach(f => {
+      const n = f.p.n; if (!n) return;
+      const st = ROAD[f.p.c]; if (!st) return;
+      const minZ = f.p.c === 'primary' || f.p.c === 'secondary' ? 13 : f.p.c === 'tertiary' ? 14 : 15;
+      if (z < minZ) return;
+      const size = z >= 17 ? 13 : z >= 15 ? 12 : 11;
+      const font = '500 ' + size + 'px ' + FONT;
+      pathLabels(f.r[0], s, n, font, size).forEach(L1 => {
+        if (free(L1.boxes)) { take(L1.boxes); out.push(L1.item); }
+      });
+    });
+    // POI names under icons
+    poiShown.forEach(p => {
+      const st = POI[p.p.k];
+      if (!p.p.n || !st.nm || z < st.nm) return;
+      const name = p.p.k === 'peak' && p.p.e ? p.p.n + ' (' + p.p.e + ' m)' : p.p.n;
+      const L1 = pointText(p.x * s, p.y * s, name, '500 11px ' + FONT, '#5a4632', 'rgba(255,255,255,0.9)', iconR + 9);
+      if (free(L1.boxes)) { take(L1.boxes); out.push(L1.item); }
+    });
+    out.forEach((o, i) => { o.i = i; });
+    return (labelCache[z] = out);
+
+    function pathLabels(a, s, text, font, size) {
+      const n = a.length / 2, xs = new Float64Array(n), ys = new Float64Array(n), cum = new Float64Array(n);
+      for (let i = 0; i < n; i++) {
+        xs[i] = a[2 * i] * s; ys[i] = a[2 * i + 1] * s;
+        cum[i] = i ? cum[i - 1] + Math.hypot(xs[i] - xs[i - 1], ys[i] - ys[i - 1]) : 0;
+      }
+      const L = cum[n - 1];
+      const chars = Array.from(text), cw = chars.map(ch => charW(font, ch)), W = cw.reduce((t, v) => t + v, 0);
+      if (L < W + 40) return [];
+      const at = d => {
+        let lo = 0, hi = n - 1;
+        while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cum[m] <= d) lo = m; else hi = m; }
+        const seg = cum[hi] - cum[lo] || 1, t = (d - cum[lo]) / seg;
+        return {x: xs[lo] + (xs[hi] - xs[lo]) * t, y: ys[lo] + (ys[hi] - ys[lo]) * t, a: Math.atan2(ys[hi] - ys[lo], xs[hi] - xs[lo])};
+      };
+      const spacing = 450, res = [];
+      const centers = L < spacing * 1.5 ? [L / 2] : [];
+      if (!centers.length) for (let c = spacing / 2; c < L - spacing / 4; c += spacing) centers.push(c);
+      centers.forEach(c => {
+        const start = c - W / 2;
+        if (start < 8 || start + W > L - 8) return;
+        // Pick a reading direction so text is never upside down
+        const mid = at(c), flip = Math.cos(mid.a) < 0;
+        const glyphs = [], boxes = [];
+        let acc = 0, prevA = null, ok = true;
+        for (let i = 0; i < chars.length && ok; i++) {
+          const d = flip ? start + W - acc - cw[i] / 2 : start + acc + cw[i] / 2;
+          const p = at(d), ang = flip ? p.a + Math.PI : p.a;
+          if (prevA !== null) {
+            let da = Math.abs(ang - prevA); if (da > Math.PI) da = 2 * Math.PI - da;
+            if (da > 0.5) ok = false;
+          }
+          prevA = ang; acc += cw[i];
+          glyphs.push({x: p.x, y: p.y, a: ang, ch: chars[i]});
+          const hr = Math.max(cw[i], size) / 2 + 1;
+          boxes.push([p.x - hr, p.y - hr, p.x + hr, p.y + hr]);
+        }
+        if (!ok) return;
+        res.push({boxes, item: {bb: union(boxes), t: 'path', glyphs, font, color: '#333', halo: 'rgba(255,255,255,0.95)'}});
+      });
+      return res;
+    }
+  }
+
+  function drawLabels(ctx, z, ox, oy, q) {
+    const items = labelsFor(z).filter(o => hit(o.bb, q));
+    ctx.lineJoin = 'round';
+    items.forEach(o => {
+      if (o.t === 'icon') {
+        ctx.beginPath(); ctx.arc(o.x - ox, o.y - oy, o.r, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.fill();
+        ctx.lineWidth = 1; ctx.strokeStyle = o.k === 'church' ? '#8a7f74' : '#5b8db8'; ctx.stroke();
+        ctx.font = Math.round(o.r * 1.15) + 'px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#000';
+        ctx.fillText(o.e, o.x - ox, o.y - oy + 1);
+      } else if (o.t === 'text') {
+        ctx.font = o.font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.lineWidth = 3; ctx.strokeStyle = o.halo; ctx.strokeText(o.text, o.x - ox, o.y - oy);
+        ctx.fillStyle = o.color; ctx.fillText(o.text, o.x - ox, o.y - oy);
+      } else {
+        ctx.font = o.font; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ['halo', 'fill'].forEach(pass => {
+          o.glyphs.forEach(g => {
+            ctx.save(); ctx.translate(g.x - ox, g.y - oy); ctx.rotate(g.a);
+            if (pass === 'halo') { ctx.lineWidth = 3; ctx.strokeStyle = o.halo; ctx.strokeText(g.ch, 0, 0); }
+            else { ctx.fillStyle = o.color; ctx.fillText(g.ch, 0, 0); }
+            ctx.restore();
+          });
+        });
+      }
+    });
+  }
+
+  // ---- Tile renderer ----
+  function drawTile(ctx, c) {
+    const z = c.z, s = Math.pow(2, z), ox = c.x * TS, oy = c.y * TS;
+    const m = 40;  // margin (px) for wide lines that poke in from neighbouring tiles
+    const q = [(ox - m) / s, (oy - m) / s, (ox + TS + m) / s, (oy + TS + m) / s];
+    const qpx = [ox, oy, ox + TS, oy + TS];
+
+    // Land
+    ctx.fillStyle = LAND; ctx.strokeStyle = COAST; ctx.lineWidth = z >= 14 ? 1.2 : 0.8;
+    ctx.beginPath();
+    D.land.forEach(f => { if (hit(f.bb, q)) f.r.forEach(a => trace(ctx, a, s, ox, oy, true)); });
+    ctx.fill(); ctx.stroke();
+
+    // Areas (already sorted bottom → top)
+    D.areas.forEach(f => {
+      const st = AREA[f.p.k];
+      if (!st || z < st.min || !hit(f.bb, q)) return;
+      if ((f.bb[2] - f.bb[0]) * s < 0.6 && (f.bb[3] - f.bb[1]) * s < 0.6) return;
+      ctx.beginPath(); f.r.forEach(a => trace(ctx, a, s, ox, oy, true));
+      ctx.fillStyle = st.f; ctx.fill('evenodd');
+      if (st.s && z >= 13) { ctx.strokeStyle = st.s; ctx.lineWidth = 0.8; ctx.stroke(); }
+    });
+
+    // Waterways (+ linear reefs/beaches)
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    D.waterways.forEach(f => {
+      const st = WATERWAY[f.p.k];
+      if (!st || z < st.min || !hit(f.bb, q)) return;
+      ctx.beginPath(); trace(ctx, f.r[0], s, ox, oy, false);
+      ctx.strokeStyle = st.c; ctx.lineWidth = zw(st.w, z); ctx.stroke();
+    });
+
+    // Buildings
+    if (z >= 13) {
+      ctx.beginPath();
+      D.buildings.forEach(f => {
+        if (!hit(f.bb, q)) return;
+        const bw = (f.bb[2] - f.bb[0]) * s, bh = (f.bb[3] - f.bb[1]) * s;
+        if (bw < 2.5 && bh < 2.5) {
+          // Too small to trace: keep villages visible as dots
+          const cx = (f.bb[0] + f.bb[2]) / 2 * s - ox, cy = (f.bb[1] + f.bb[3]) / 2 * s - oy;
+          ctx.rect(cx - 1.2, cy - 1.2, 2.4, 2.4);
+        } else f.r.forEach(a => trace(ctx, a, s, ox, oy, true));
+      });
+      ctx.fillStyle = z >= 16 ? '#d9cfc6' : z >= 15 ? '#cbbcae' : '#bfae9f'; ctx.fill('nonzero');
+      if (z >= 16) { ctx.strokeStyle = '#bcaea2'; ctx.lineWidth = 0.7; ctx.stroke(); }
+    }
+
+    // Roads: casings for all classes first, then fills, minor → major
+    const vis = {};
+    D.roads.forEach(f => {
+      const st = ROAD[f.p.c];
+      if (!st || z < st.min || !hit(f.bb, q)) return;
+      (vis[f.p.c] || (vis[f.p.c] = [])).push(f);
+    });
+    const casingPad = z >= 15 ? 1.5 : z >= 13 ? 1 : 0.6;
+    ROAD_ORDER.forEach(k => {
+      const st = ROAD[k], list = vis[k];
+      if (!list || !st.k || z < 12) return;
+      const w = zw(st.w, z) + 2 * casingPad;
+      list.forEach(f => {
+        ctx.beginPath(); trace(ctx, f.r[0], s, ox, oy, false);
+        ctx.lineWidth = w + (f.p.b && z >= 14 ? 2 : 0);
+        ctx.strokeStyle = f.p.b && z >= 14 ? '#666' : f.p.u ? '#b48b5a' : st.k;
+        ctx.setLineDash(f.p.u && !f.p.b ? [6, 3] : []);
+        ctx.stroke();
+      });
+    });
+    ctx.setLineDash([]);
+    ROAD_ORDER.forEach(k => {
+      const st = ROAD[k], list = vis[k];
+      if (!list) return;
+      ctx.beginPath();
+      list.forEach(f => trace(ctx, f.r[0], s, ox, oy, false));
+      ctx.strokeStyle = st.c; ctx.lineWidth = zw(st.w, z);
+      ctx.setLineDash(st.d || []);
+      ctx.lineCap = st.d ? 'butt' : 'round';
+      ctx.stroke();
+    });
+    ctx.setLineDash([]);
+
+    drawLabels(ctx, z, ox, oy, qpx);
+  }
+
+  const Layer = L.GridLayer.extend({
+    createTile(coords, done) {
+      const tile = document.createElement('canvas');
+      tile.width = tile.height = TS * DPR;
+      setTimeout(() => {
+        const ctx = tile.getContext('2d');
+        ctx.scale(DPR, DPR);
+        try { drawTile(ctx, coords); } catch (e) { console.error(e); }
+        done(null, tile);
+      }, 0);
+      return tile;
+    }
+  });
+  const layer = new Layer({
+    maxZoom: 19, keepBuffer: 3, updateWhenZooming: false,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors (ODbL)</a> — offline vector map'
+  });
+  layer.labelsFor = labelsFor;
+  layer.meta = B.meta;
+  return layer;
+})();
+
+// Online OSM tiles (only when there's internet). Standard OSM tiles need an http(s) referrer; local copies use HOT.
 const onWeb = /^https?:$/.test(location.protocol);
-L.tileLayer(onWeb ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
-  attribution: '&copy; OpenStreetMap contributors' + (onWeb ? '' : ', tiles by HOT / OSM France'),
-  subdomains: 'abc',
-  maxZoom: 19
-}).addTo(map);
+const onlineTiles = L.tileLayer(onWeb ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors (ODbL)</a>' + (onWeb ? '' : ', tiles by HOT / OSM France'),
+  subdomains: 'abc', maxZoom: 19
+});
+const baseLayers = {};
+if (OfflineBase) baseLayers['📴 Offline map'] = OfflineBase;
+baseLayers['🌐 Online map'] = onlineTiles;
+let savedBase = null;
+try { savedBase = localStorage.getItem('samoaBase'); } catch (e) {}
+(baseLayers[savedBase] || OfflineBase || onlineTiles).addTo(map);
+L.control.layers(baseLayers, null, {position: 'topright', collapsed: false}).addTo(map);
+map.on('baselayerchange', e => { try { localStorage.setItem('samoaBase', e.name); } catch (err) {} });
+if (OfflineBase && OfflineBase.meta) document.getElementById('dataInfo').textContent = 'Map data © OpenStreetMap contributors (ODbL), downloaded ' + OfflineBase.meta.fetched + '.';
 
 function icon(color, size) {
   return L.divIcon({
@@ -193,579 +546,18 @@ const stops = TRIP.stops;
 const dayInfo = Object.fromEntries(TRIP.days.map(d => [d.key, d]));
 const COLORS = {base:'#27ae60', stay:'#2e86c1', transport:'#7f8c8d', must:'#e74c3c', sight:'#e67e22', swim:'#1abc9c', cave:'#9b59b6'};
 
-// Route line (approximate counterclockwise path)
-const routeCoords = [
-  [-13.74335, -172.21821],
-  [-13.73956, -172.21921],
-  [-13.73533, -172.22157],
-  [-13.73271, -172.22077],
-  [-13.73258, -172.21684],
-  [-13.73128, -172.21229],
-  [-13.72939, -172.20994],
-  [-13.7271, -172.20544],
-  [-13.72377, -172.20441],
-  [-13.71791, -172.20427],
-  [-13.71542, -172.20378],
-  [-13.71251, -172.20438],
-  [-13.70983, -172.20414],
-  [-13.70661, -172.2044],
-  [-13.7033, -172.20312],
-  [-13.70098, -172.20044],
-  [-13.69794, -172.20046],
-  [-13.69548, -172.20059],
-  [-13.69346, -172.19701],
-  [-13.69097, -172.19387],
-  [-13.6888, -172.19367],
-  [-13.68591, -172.19037],
-  [-13.68447, -172.18732],
-  [-13.68263, -172.18517],
-  [-13.67697, -172.17944],
-  [-13.67428, -172.17907],
-  [-13.67241, -172.17791],
-  [-13.66896, -172.17679],
-  [-13.66604, -172.17808],
-  [-13.65718, -172.18479],
-  [-13.64984, -172.18829],
-  [-13.64404, -172.18879],
-  [-13.64302, -172.19068],
-  [-13.63943, -172.19267],
-  [-13.63702, -172.19324],
-  [-13.63558, -172.19528],
-  [-13.63213, -172.19742],
-  [-13.62978, -172.19752],
-  [-13.62857, -172.19672],
-  [-13.62667, -172.19632],
-  [-13.62477, -172.1952],
-  [-13.62277, -172.19458],
-  [-13.62102, -172.19683],
-  [-13.61815, -172.19848],
-  [-13.61555, -172.20028],
-  [-13.61266, -172.20141],
-  [-13.60989, -172.2015],
-  [-13.60599, -172.20208],
-  [-13.60223, -172.20407],
-  [-13.60043, -172.20422],
-  [-13.59666, -172.20554],
-  [-13.59472, -172.20594],
-  [-13.59261, -172.20764],
-  [-13.59133, -172.20916],
-  [-13.58787, -172.21166],
-  [-13.58261, -172.21713],
-  [-13.57328, -172.228],
-  [-13.56486, -172.23318],
-  [-13.55419, -172.23751],
-  [-13.54792, -172.24085],
-  [-13.53567, -172.25278],
-  [-13.52671, -172.25892],
-  [-13.51802, -172.26367],
-  [-13.51827, -172.26717],
-  [-13.51988, -172.28002],
-  [-13.51203, -172.29545],
-  [-13.50982, -172.30008],
-  [-13.5012, -172.30185],
-  [-13.4988, -172.30435],
-  [-13.498, -172.30969],
-  [-13.49088, -172.31805],
-  [-13.48395, -172.3189],
-  [-13.48095, -172.31741],
-  [-13.47571, -172.3173],
-  [-13.47242, -172.3178],
-  [-13.46729, -172.3175],
-  [-13.45637, -172.32506],
-  [-13.45344, -172.32883],
-  [-13.45069, -172.33331],
-  [-13.4482, -172.33723],
-  [-13.45186, -172.33656],
-  [-13.45406, -172.33651],
-  [-13.4578, -172.33765],
-  [-13.46041, -172.33803],
-  [-13.46287, -172.33869],
-  [-13.46642, -172.34052],
-  [-13.46532, -172.34027],
-  [-13.46246, -172.33861],
-  [-13.45988, -172.33773],
-  [-13.45691, -172.33762],
-  [-13.45377, -172.3363],
-  [-13.45108, -172.33683],
-  [-13.44765, -172.33783],
-  [-13.44513, -172.3413],
-  [-13.44269, -172.34672],
-  [-13.44146, -172.35082],
-  [-13.44093, -172.35498],
-  [-13.44268, -172.35792],
-  [-13.44436, -172.3595],
-  [-13.44701, -172.36092],
-  [-13.44888, -172.36202],
-  [-13.44976, -172.36328],
-  [-13.44938, -172.3665],
-  [-13.44931, -172.36983],
-  [-13.44876, -172.37387],
-  [-13.44719, -172.37787],
-  [-13.44665, -172.38205],
-  [-13.44717, -172.38614],
-  [-13.44608, -172.38736],
-  [-13.44627, -172.38772],
-  [-13.44703, -172.38826],
-  [-13.44688, -172.38962],
-  [-13.44738, -172.3905],
-  [-13.44732, -172.39212],
-  [-13.44873, -172.39552],
-  [-13.45044, -172.40066],
-  [-13.45148, -172.40391],
-  [-13.45181, -172.40696],
-  [-13.45246, -172.40796],
-  [-13.45433, -172.40854],
-  [-13.4557, -172.40941],
-  [-13.45675, -172.41147],
-  [-13.45664, -172.411],
-  [-13.45548, -172.40916],
-  [-13.45389, -172.40847],
-  [-13.45219, -172.40776],
-  [-13.45178, -172.40654],
-  [-13.45128, -172.40313],
-  [-13.4502, -172.39961],
-  [-13.44813, -172.39399],
-  [-13.44732, -172.39175],
-  [-13.44711, -172.39021],
-  [-13.44705, -172.38926],
-  [-13.44686, -172.38792],
-  [-13.44615, -172.38768],
-  [-13.44621, -172.38717],
-  [-13.4472, -172.38589],
-  [-13.4466, -172.38095],
-  [-13.4481, -172.37507],
-  [-13.44941, -172.37187],
-  [-13.44932, -172.36855],
-  [-13.44984, -172.36454],
-  [-13.4494, -172.36275],
-  [-13.4486, -172.3617],
-  [-13.44572, -172.36012],
-  [-13.44371, -172.35903],
-  [-13.44224, -172.35725],
-  [-13.44379, -172.35624],
-  [-13.44252, -172.3538],
-  [-13.44274, -172.35293],
-  [-13.44285, -172.35512],
-  [-13.44322, -172.35639],
-  [-13.44312, -172.35829],
-  [-13.44488, -172.35977],
-  [-13.44729, -172.3611],
-  [-13.44895, -172.36215],
-  [-13.44983, -172.36354],
-  [-13.44932, -172.36682],
-  [-13.44934, -172.37069],
-  [-13.44865, -172.37421],
-  [-13.44682, -172.37912],
-  [-13.44671, -172.38354],
-  [-13.44704, -172.38645],
-  [-13.44604, -172.38753],
-  [-13.44659, -172.38774],
-  [-13.44712, -172.38864],
-  [-13.44685, -172.3899],
-  [-13.44746, -172.39079],
-  [-13.44751, -172.3928],
-  [-13.44978, -172.39827],
-  [-13.45069, -172.40168],
-  [-13.45166, -172.40487],
-  [-13.45188, -172.40725],
-  [-13.45298, -172.40826],
-  [-13.45484, -172.40873],
-  [-13.45616, -172.41011],
-  [-13.45704, -172.41215],
-  [-13.45848, -172.41422],
-  [-13.45961, -172.41657],
-  [-13.4618, -172.41759],
-  [-13.46351, -172.41745],
-  [-13.46554, -172.41723],
-  [-13.46767, -172.41649],
-  [-13.47017, -172.41723],
-  [-13.47327, -172.41658],
-  [-13.47334, -172.41472],
-  [-13.47327, -172.41658],
-  [-13.47017, -172.41723],
-  [-13.46767, -172.41649],
-  [-13.46554, -172.41723],
-  [-13.46351, -172.41745],
-  [-13.46346, -172.41855],
-  [-13.46503, -172.41908],
-  [-13.46799, -172.41946],
-  [-13.46976, -172.42005],
-  [-13.47169, -172.42144],
-  [-13.4721, -172.42257],
-  [-13.47093, -172.42392],
-  [-13.47033, -172.42478],
-  [-13.46981, -172.42591],
-  [-13.46852, -172.42708],
-  [-13.46842, -172.42824],
-  [-13.46872, -172.43072],
-  [-13.46874, -172.434],
-  [-13.46867, -172.43619],
-  [-13.46866, -172.43898],
-  [-13.46808, -172.43996],
-  [-13.46826, -172.44203],
-  [-13.4685, -172.44504],
-  [-13.46909, -172.44663],
-  [-13.46984, -172.44779],
-  [-13.46984, -172.44885],
-  [-13.46954, -172.45005],
-  [-13.46956, -172.45129],
-  [-13.47, -172.45226],
-  [-13.47124, -172.45374],
-  [-13.4721, -172.45508],
-  [-13.47284, -172.45651],
-  [-13.47345, -172.45752],
-  [-13.47387, -172.45893],
-  [-13.47458, -172.45997],
-  [-13.47523, -172.46114],
-  [-13.47724, -172.4633],
-  [-13.47968, -172.46873],
-  [-13.48385, -172.47422],
-  [-13.48696, -172.4746],
-  [-13.49034, -172.47215],
-  [-13.4942, -172.4717],
-  [-13.49745, -172.47121],
-  [-13.50188, -172.47393],
-  [-13.50404, -172.47571],
-  [-13.50624, -172.47805],
-  [-13.50729, -172.48159],
-  [-13.50887, -172.48598],
-  [-13.51135, -172.49015],
-  [-13.51373, -172.4933],
-  [-13.51588, -172.49558],
-  [-13.51815, -172.49872],
-  [-13.51978, -172.50069],
-  [-13.52103, -172.50237],
-  [-13.52273, -172.5048],
-  [-13.52518, -172.50673],
-  [-13.52808, -172.50903],
-  [-13.53136, -172.51189],
-  [-13.53412, -172.51573],
-  [-13.53672, -172.51746],
-  [-13.53938, -172.51888],
-  [-13.54126, -172.52089],
-  [-13.54027, -172.52384],
-  [-13.54017, -172.52775],
-  [-13.53847, -172.53066],
-  [-13.53744, -172.53372],
-  [-13.53584, -172.53859],
-  [-13.53646, -172.54482],
-  [-13.53722, -172.5487],
-  [-13.53763, -172.55296],
-  [-13.53723, -172.55722],
-  [-13.53665, -172.56162],
-  [-13.53675, -172.56588],
-  [-13.53789, -172.56974],
-  [-13.53915, -172.57398],
-  [-13.54035, -172.57737],
-  [-13.54055, -172.57998],
-  [-13.54106, -172.58326],
-  [-13.54193, -172.58712],
-  [-13.5425, -172.59046],
-  [-13.54311, -172.59283],
-  [-13.54237, -172.59585],
-  [-13.54315, -172.59817],
-  [-13.54281, -172.60055],
-  [-13.54109, -172.60332],
-  [-13.53923, -172.607],
-  [-13.53876, -172.60939],
-  [-13.53844, -172.61129],
-  [-13.53836, -172.61398],
-  [-13.53704, -172.61713],
-  [-13.5366, -172.6187],
-  [-13.53579, -172.62161],
-  [-13.53526, -172.62373],
-  [-13.53328, -172.62482],
-  [-13.53056, -172.62618],
-  [-13.52824, -172.62731],
-  [-13.52649, -172.62856],
-  [-13.52524, -172.63044],
-  [-13.52416, -172.63096],
-  [-13.52165, -172.63063],
-  [-13.51787, -172.63005],
-  [-13.51446, -172.63084],
-  [-13.51809, -172.63615],
-  [-13.51914, -172.63787],
-  [-13.51793, -172.63906],
-  [-13.51823, -172.64173],
-  [-13.51824, -172.64525],
-  [-13.51702, -172.65024],
-  [-13.515, -172.65281],
-  [-13.51306, -172.65497],
-  [-13.51051, -172.65634],
-  [-13.51001, -172.66002],
-  [-13.5096, -172.66575],
-  [-13.51102, -172.66759],
-  [-13.51473, -172.67434],
-  [-13.51601, -172.67641],
-  [-13.51539, -172.67901],
-  [-13.5144, -172.68292],
-  [-13.51525, -172.68655],
-  [-13.51576, -172.69228],
-  [-13.51796, -172.69697],
-  [-13.51982, -172.6999],
-  [-13.51959, -172.70355],
-  [-13.52143, -172.70673],
-  [-13.5229, -172.70912],
-  [-13.5253, -172.71027],
-  [-13.52708, -172.71221],
-  [-13.52914, -172.7148],
-  [-13.53153, -172.72],
-  [-13.53439, -172.72668],
-  [-13.53495, -172.73011],
-  [-13.53698, -172.73367],
-  [-13.53951, -172.73522],
-  [-13.53626, -172.73809],
-  [-13.53468, -172.74066],
-  [-13.53158, -172.74223],
-  [-13.52891, -172.74351],
-  [-13.528, -172.74587],
-  [-13.52537, -172.74992],
-  [-13.52262, -172.75333],
-  [-13.51998, -172.75562],
-  [-13.5162, -172.75971],
-  [-13.51394, -172.7625],
-  [-13.51074, -172.7632],
-  [-13.50815, -172.76443],
-  [-13.50484, -172.76653],
-  [-13.50127, -172.76717],
-  [-13.49703, -172.76981],
-  [-13.4946, -172.77228],
-  [-13.49309, -172.77664],
-  [-13.49401, -172.7813],
-  [-13.4944, -172.78398],
-  [-13.49788, -172.78606],
-  [-13.50098, -172.78862],
-  [-13.50345, -172.79195],
-  [-13.50658, -172.79358],
-  [-13.5083, -172.79466],
-  [-13.513, -172.79939],
-  [-13.51554, -172.80258],
-  [-13.52148, -172.79886],
-  [-13.52939, -172.79162],
-  [-13.53192, -172.78857],
-  [-13.53461, -172.78503],
-  [-13.53559, -172.7807],
-  [-13.53678, -172.7766],
-  [-13.53762, -172.77372],
-  [-13.5392, -172.76985],
-  [-13.54026, -172.76702],
-  [-13.54169, -172.76423],
-  [-13.54678, -172.75821],
-  [-13.5483, -172.75771],
-  [-13.55123, -172.7573],
-  [-13.55304, -172.75495],
-  [-13.55364, -172.7539],
-  [-13.55381, -172.75246],
-  [-13.55389, -172.7516],
-  [-13.5546, -172.75002],
-  [-13.5546, -172.74898],
-  [-13.55336, -172.74741],
-  [-13.55343, -172.74619],
-  [-13.55422, -172.74188],
-  [-13.55395, -172.74097],
-  [-13.55352, -172.74016],
-  [-13.55303, -172.73929],
-  [-13.55227, -172.73853],
-  [-13.55158, -172.73737],
-  [-13.55129, -172.73638],
-  [-13.55288, -172.73644],
-  [-13.5551, -172.73648],
-  [-13.558, -172.73726],
-  [-13.56225, -172.73776],
-  [-13.56531, -172.73696],
-  [-13.57005, -172.73628],
-  [-13.57448, -172.73276],
-  [-13.5782, -172.72887],
-  [-13.57856, -172.72652],
-  [-13.57641, -172.72323],
-  [-13.57809, -172.72014],
-  [-13.57882, -172.71697],
-  [-13.58125, -172.71375],
-  [-13.58541, -172.7131],
-  [-13.58742, -172.71502],
-  [-13.58939, -172.71984],
-  [-13.5893, -172.72214],
-  [-13.58936, -172.71946],
-  [-13.58701, -172.71373],
-  [-13.58503, -172.71326],
-  [-13.58056, -172.71368],
-  [-13.57853, -172.71814],
-  [-13.57779, -172.721],
-  [-13.57663, -172.72443],
-  [-13.57871, -172.72711],
-  [-13.5816, -172.7288],
-  [-13.58687, -172.7272],
-  [-13.59186, -172.72555],
-  [-13.59796, -172.72136],
-  [-13.60133, -172.71691],
-  [-13.60779, -172.70819],
-  [-13.61395, -172.70146],
-  [-13.61373, -172.69762],
-  [-13.61455, -172.69367],
-  [-13.61666, -172.68884],
-  [-13.62046, -172.68266],
-  [-13.62479, -172.67907],
-  [-13.63091, -172.67628],
-  [-13.63533, -172.67342],
-  [-13.63866, -172.67103],
-  [-13.641, -172.66971],
-  [-13.64327, -172.66793],
-  [-13.64551, -172.66675],
-  [-13.64761, -172.6645],
-  [-13.64906, -172.6609],
-  [-13.65104, -172.65623],
-  [-13.65338, -172.65291],
-  [-13.65781, -172.64905],
-  [-13.66101, -172.64642],
-  [-13.66572, -172.64355],
-  [-13.66916, -172.64141],
-  [-13.67286, -172.63939],
-  [-13.67685, -172.63706],
-  [-13.67825, -172.63309],
-  [-13.67903, -172.63048],
-  [-13.68022, -172.62711],
-  [-13.68207, -172.62489],
-  [-13.68508, -172.62017],
-  [-13.68693, -172.61892],
-  [-13.69037, -172.61521],
-  [-13.69305, -172.61292],
-  [-13.69481, -172.61063],
-  [-13.69794, -172.60914],
-  [-13.703, -172.60613],
-  [-13.70439, -172.60427],
-  [-13.70611, -172.60401],
-  [-13.70687, -172.60239],
-  [-13.70906, -172.59928],
-  [-13.71165, -172.59788],
-  [-13.71477, -172.59615],
-  [-13.71867, -172.59455],
-  [-13.721, -172.59221],
-  [-13.72186, -172.58975],
-  [-13.72273, -172.58758],
-  [-13.72459, -172.58231],
-  [-13.72634, -172.5797],
-  [-13.72674, -172.5762],
-  [-13.73041, -172.57182],
-  [-13.73379, -172.56937],
-  [-13.73607, -172.56649],
-  [-13.73786, -172.5618],
-  [-13.74021, -172.56035],
-  [-13.7442, -172.5565],
-  [-13.74752, -172.55381],
-  [-13.74997, -172.55008],
-  [-13.75031, -172.5483],
-  [-13.75181, -172.544],
-  [-13.75408, -172.54172],
-  [-13.75715, -172.54062],
-  [-13.761, -172.5384],
-  [-13.76346, -172.53697],
-  [-13.7657, -172.53359],
-  [-13.7667, -172.53067],
-  [-13.76705, -172.52733],
-  [-13.76825, -172.52435],
-  [-13.76986, -172.52008],
-  [-13.76952, -172.51627],
-  [-13.77075, -172.51259],
-  [-13.77284, -172.512],
-  [-13.77648, -172.51402],
-  [-13.77911, -172.51355],
-  [-13.78261, -172.51337],
-  [-13.78611, -172.51243],
-  [-13.78802, -172.51292],
-  [-13.79041, -172.51227],
-  [-13.79252, -172.51231],
-  [-13.79583, -172.50826],
-  [-13.79722, -172.50421],
-  [-13.79746, -172.50084],
-  [-13.79711, -172.49195],
-  [-13.79518, -172.48639],
-  [-13.7908, -172.48156],
-  [-13.78982, -172.47905],
-  [-13.78577, -172.47506],
-  [-13.78406, -172.47141],
-  [-13.78155, -172.46978],
-  [-13.77846, -172.46662],
-  [-13.77704, -172.46313],
-  [-13.77575, -172.4582],
-  [-13.77419, -172.44917],
-  [-13.77428, -172.44524],
-  [-13.77496, -172.44117],
-  [-13.77477, -172.43617],
-  [-13.77528, -172.43193],
-  [-13.77524, -172.42727],
-  [-13.77583, -172.41979],
-  [-13.77532, -172.41696],
-  [-13.77411, -172.4141],
-  [-13.77429, -172.41076],
-  [-13.77296, -172.40648],
-  [-13.76981, -172.40061],
-  [-13.76813, -172.39681],
-  [-13.76743, -172.39397],
-  [-13.7688, -172.39085],
-  [-13.77177, -172.3896],
-  [-13.77604, -172.38722],
-  [-13.77734, -172.38514],
-  [-13.77538, -172.38086],
-  [-13.77642, -172.37534],
-  [-13.77512, -172.37022],
-  [-13.77308, -172.36679],
-  [-13.76876, -172.36442],
-  [-13.76427, -172.36271],
-  [-13.7601, -172.36296],
-  [-13.75816, -172.36147],
-  [-13.75801, -172.35847],
-  [-13.75661, -172.35465],
-  [-13.75516, -172.34867],
-  [-13.75437, -172.34308],
-  [-13.7553, -172.3382],
-  [-13.75507, -172.33275],
-  [-13.75611, -172.32564],
-  [-13.75696, -172.32176],
-  [-13.75347, -172.31699],
-  [-13.75268, -172.31409],
-  [-13.74899, -172.31343],
-  [-13.74584, -172.31305],
-  [-13.74787, -172.31291],
-  [-13.75232, -172.31412],
-  [-13.75268, -172.31215],
-  [-13.7531, -172.3094],
-  [-13.7555, -172.30742],
-  [-13.75836, -172.3015],
-  [-13.75913, -172.29886],
-  [-13.75787, -172.29199],
-  [-13.7589, -172.28753],
-  [-13.75683, -172.2851],
-  [-13.75457, -172.28267],
-  [-13.7515, -172.27999],
-  [-13.74788, -172.27709],
-  [-13.74621, -172.27172],
-  [-13.74699, -172.26661],
-  [-13.74482, -172.26079],
-  [-13.74421, -172.25391],
-  [-13.7397, -172.24837],
-  [-13.73894, -172.24228],
-  [-13.73497, -172.2331],
-  [-13.73239, -172.2262],
-  [-13.73331, -172.22311],
-  [-13.73567, -172.22135],
-  [-13.73986, -172.21914],
-  [-13.74335, -172.21821],
+// Route line (copied from index.html)
+const routeCoords = [ [-13.74335, -172.21821], [-13.73956, -172.21921], [-13.73533, -172.22157], [-13.73271, -172.22077], [-13.73258, -172.21684], [-13.73128, -172.21229], [-13.72939, -172.20994], [-13.7271, -172.20544], [-13.72377, -172.20441], [-13.71791, -172.20427], [-13.71542, -172.20378], [-13.71251, -172.20438], [-13.70983, -172.20414], [-13.70661, -172.2044], [-13.7033, -172.20312], [-13.70098, -172.20044], [-13.69794, -172.20046], [-13.69548, -172.20059], [-13.69346, -172.19701], [-13.69097, -172.19387], [-13.6888, -172.19367], [-13.68591, -172.19037], [-13.68447, -172.18732], [-13.68263, -172.18517], [-13.67697, -172.17944], [-13.67428, -172.17907], [-13.67241, -172.17791], [-13.66896, -172.17679], [-13.66604, -172.17808], [-13.65718, -172.18479], [-13.64984, -172.18829], [-13.64404, -172.18879], [-13.64302, -172.19068], [-13.63943, -172.19267], [-13.63702, -172.19324], [-13.63558, -172.19528], [-13.63213, -172.19742], [-13.62978, -172.19752], [-13.62857, -172.19672], [-13.62667, -172.19632], [-13.62477, -172.1952], [-13.62277, -172.19458], [-13.62102, -172.19683], [-13.61815, -172.19848], [-13.61555, -172.20028], [-13.61266, -172.20141], [-13.60989, -172.2015], [-13.60599, -172.20208], [-13.60223, -172.20407], [-13.60043, -172.20422], [-13.59666, -172.20554], [-13.59472, -172.20594], [-13.59261, -172.20764], [-13.59133, -172.20916], [-13.58787, -172.21166], [-13.58261, -172.21713], [-13.57328, -172.228], [-13.56486, -172.23318], [-13.55419, -172.23751], [-13.54792, -172.24085], [-13.53567, -172.25278], [-13.52671, -172.25892], [-13.51802, -172.26367], [-13.51827, -172.26717], [-13.51988, -172.28002], [-13.51203, -172.29545], [-13.50982, -172.30008], [-13.5012, -172.30185], [-13.4988, -172.30435], [-13.498, -172.30969], [-13.49088, -172.31805], [-13.48395, -172.3189], [-13.48095, -172.31741], [-13.47571, -172.3173], [-13.47242, -172.3178], [-13.46729, -172.3175], [-13.45637, -172.32506], [-13.45344, -172.32883], [-13.45069, -172.33331], [-13.4482, -172.33723], [-13.45186, -172.33656], [-13.45406, -172.33651], [-13.4578, -172.33765], [-13.46041, -172.33803], [-13.46287, -172.33869], [-13.46642, -172.34052], [-13.46532, -172.34027], [-13.46246, -172.33861], [-13.45988, -172.33773], [-13.45691, -172.33762], [-13.45377, -172.3363], [-13.45108, -172.33683], [-13.44765, -172.33783], [-13.44513, -172.3413], [-13.44269, -172.34672], [-13.44146, -172.35082], [-13.44093, -172.35498], [-13.44268, -172.35792], [-13.44436, -172.3595], [-13.44701, -172.36092], [-13.44888, -172.36202], [-13.44976, -172.36328], [-13.44938, -172.3665], [-13.44931, -172.36983], [-13.44876, -172.37387], [-13.44719, -172.37787], [-13.44665, -172.38205], [-13.44717, -172.38614], [-13.44608, -172.38736], [-13.44627, -172.38772], [-13.44703, -172.38826], [-13.44688, -172.38962], [-13.44738, -172.3905], [-13.44732, -172.39212], [-13.44873, -172.39552], [-13.45044, -172.40066], [-13.45148, -172.40391], [-13.45181, -172.40696], [-13.45246, -172.40796], [-13.45433, -172.40854], [-13.4557, -172.40941], [-13.45675, -172.41147], [-13.45664, -172.411], [-13.45548, -172.40916], [-13.45389, -172.40847], [-13.45219, -172.40776], [-13.45178, -172.40654], [-13.45128, -172.40313], [-13.4502, -172.39961], [-13.44813, -172.39399], [-13.44732, -172.39175], [-13.44711, -172.39021], [-13.44705, -172.38926], [-13.44686, -172.38792], [-13.44615, -172.38768], [-13.44621, -172.38717], [-13.4472, -172.38589], [-13.4466, -172.38095], [-13.4481, -172.37507], [-13.44941, -172.37187], [-13.44932, -172.36855], [-13.44984, -172.36454], [-13.4494, -172.36275], [-13.4486, -172.3617], [-13.44572, -172.36012], [-13.44371, -172.35903], [-13.44224, -172.35725], [-13.44379, -172.35624], [-13.44252, -172.3538], [-13.44274, -172.35293], [-13.44285, -172.35512], [-13.44322, -172.35639], [-13.44312, -172.35829], [-13.44488, -172.35977], [-13.44729, -172.3611], [-13.44895, -172.36215], [-13.44983, -172.36354], [-13.44932, -172.36682], [-13.44934, -172.37069], [-13.44865, -172.37421], [-13.44682, -172.37912], [-13.44671, -172.38354], [-13.44704, -172.38645], [-13.44604, -172.38753], [-13.44659, -172.38774], [-13.44712, -172.38864], [-13.44685, -172.3899], [-13.44746, -172.39079], [-13.44751, -172.3928], [-13.44978, -172.39827], [-13.45069, -172.40168], [-13.45166, -172.40487], [-13.45188, -172.40725], [-13.45298, -172.40826], [-13.45484, -172.40873], [-13.45616, -172.41011], [-13.45704, -172.41215], [-13.45848, -172.41422], [-13.45961, -172.41657], [-13.4618, -172.41759], [-13.46351, -172.41745], [-13.46554, -172.41723], [-13.46767, -172.41649], [-13.47017, -172.41723], [-13.47327, -172.41658], [-13.47334, -172.41472], [-13.47327, -172.41658], [-13.47017, -172.41723], [-13.46767, -172.41649], [-13.46554, -172.41723], [-13.46351, -172.41745], [-13.46346, -172.41855], [-13.46503, -172.41908], [-13.46799, -172.41946], [-13.46976, -172.42005], [-13.47169, -172.42144], [-13.4721, -172.42257], [-13.47093, -172.42392], [-13.47033, -172.42478], [-13.46981, -172.42591], [-13.46852, -172.42708], [-13.46842, -172.42824], [-13.46872, -172.43072], [-13.46874, -172.434], [-13.46867, -172.43619], [-13.46866, -172.43898], [-13.46808, -172.43996], [-13.46826, -172.44203], [-13.4685, -172.44504], [-13.46909, -172.44663], [-13.46984, -172.44779], [-13.46984, -172.44885], [-13.46954, -172.45005], [-13.46956, -172.45129], [-13.47, -172.45226], [-13.47124, -172.45374], [-13.4721, -172.45508], [-13.47284, -172.45651], [-13.47345, -172.45752], [-13.47387, -172.45893], [-13.47458, -172.45997], [-13.47523, -172.46114], [-13.47724, -172.4633], [-13.47968, -172.46873], [-13.48385, -172.47422], [-13.48696, -172.4746], [-13.49034, -172.47215], [-13.4942, -172.4717], [-13.49745, -172.47121], [-13.50188, -172.47393], [-13.50404, -172.47571], [-13.50624, -172.47805], [-13.50729, -172.48159], [-13.50887, -172.48598], [-13.51135, -172.49015], [-13.51373, -172.4933], [-13.51588, -172.49558], [-13.51815, -172.49872], [-13.51978, -172.50069], [-13.52103, -172.50237], [-13.52273, -172.5048], [-13.52518, -172.50673], [-13.52808, -172.50903], [-13.53136, -172.51189], [-13.53412, -172.51573], [-13.53672, -172.51746], [-13.53938, -172.51888], [-13.54126, -172.52089], [-13.54027, -172.52384], [-13.54017, -172.52775], [-13.53847, -172.53066], [-13.53744, -172.53372], [-13.53584, -172.53859], [-13.53646, -172.54482], [-13.53722, -172.5487], [-13.53763, -172.55296], [-13.53723, -172.55722], [-13.53665, -172.56162], [-13.53675, -172.56588], [-13.53789, -172.56974], [-13.53915, -172.57398], [-13.54035, -172.57737], [-13.54055, -172.57998], [-13.54106, -172.58326], [-13.54193, -172.58712], [-13.5425, -172.59046], [-13.54311, -172.59283], [-13.54237, -172.59585], [-13.54315, -172.59817], [-13.54281, -172.60055], [-13.54109, -172.60332], [-13.53923, -172.607], [-13.53876, -172.60939], [-13.53844, -172.61129], [-13.53836, -172.61398], [-13.53704, -172.61713], [-13.5366, -172.6187], [-13.53579, -172.62161], [-13.53526, -172.62373], [-13.53328, -172.62482], [-13.53056, -172.62618], [-13.52824, -172.62731], [-13.52649, -172.62856], [-13.52524, -172.63044], [-13.52416, -172.63096], [-13.52165, -172.63063], [-13.51787, -172.63005], [-13.51446, -172.63084], [-13.51809, -172.63615], [-13.51914, -172.63787], [-13.51793, -172.63906], [-13.51823, -172.64173], [-13.51824, -172.64525], [-13.51702, -172.65024], [-13.515, -172.65281], [-13.51306, -172.65497], [-13.51051, -172.65634], [-13.51001, -172.66002], [-13.5096, -172.66575], [-13.51102, -172.66759], [-13.51473, -172.67434], [-13.51601, -172.67641], [-13.51539, -172.67901], [-13.5144, -172.68292], [-13.51525, -172.68655], [-13.51576, -172.69228], [-13.51796, -172.69697], [-13.51982, -172.6999], [-13.51959, -172.70355], [-13.52143, -172.70673], [-13.5229, -172.70912], [-13.5253, -172.71027], [-13.52708, -172.71221], [-13.52914, -172.7148], [-13.53153, -172.72], [-13.53439, -172.72668], [-13.53495, -172.73011], [-13.53698, -172.73367], [-13.53951, -172.73522], [-13.53626, -172.73809], [-13.53468, -172.74066], [-13.53158, -172.74223], [-13.52891, -172.74351], [-13.528, -172.74587], [-13.52537, -172.74992], [-13.52262, -172.75333], [-13.51998, -172.75562], [-13.5162, -172.75971], [-13.51394, -172.7625], [-13.51074, -172.7632], [-13.50815, -172.76443], [-13.50484, -172.76653], [-13.50127, -172.76717], [-13.49703, -172.76981], [-13.4946, -172.77228], [-13.49309, -172.77664], [-13.49401, -172.7813], [-13.4944, -172.78398], [-13.49788, -172.78606], [-13.50098, -172.78862], [-13.50345, -172.79195], [-13.50658, -172.79358], [-13.5083, -172.79466], [-13.513, -172.79939], [-13.51554, -172.80258], [-13.52148, -172.79886], [-13.52939, -172.79162], [-13.53192, -172.78857], [-13.53461, -172.78503], [-13.53559, -172.7807], [-13.53678, -172.7766], [-13.53762, -172.77372], [-13.5392, -172.76985], [-13.54026, -172.76702], [-13.54169, -172.76423], [-13.54678, -172.75821], [-13.5483, -172.75771], [-13.55123, -172.7573], [-13.55304, -172.75495], [-13.55364, -172.7539], [-13.55381, -172.75246], [-13.55389, -172.7516], [-13.5546, -172.75002], [-13.5546, -172.74898], [-13.55336, -172.74741], [-13.55343, -172.74619], [-13.55422, -172.74188], [-13.55395, -172.74097], [-13.55352, -172.74016], [-13.55303, -172.73929], [-13.55227, -172.73853], [-13.55158, -172.73737], [-13.55129, -172.73638], [-13.55288, -172.73644], [-13.5551, -172.73648], [-13.558, -172.73726], [-13.56225, -172.73776], [-13.56531, -172.73696], [-13.57005, -172.73628], [-13.57448, -172.73276], [-13.5782, -172.72887], [-13.57856, -172.72652], [-13.57641, -172.72323], [-13.57809, -172.72014], [-13.57882, -172.71697], [-13.58125, -172.71375], [-13.58541, -172.7131], [-13.58742, -172.71502], [-13.58939, -172.71984], [-13.5893, -172.72214], [-13.58936, -172.71946], [-13.58701, -172.71373], [-13.58503, -172.71326], [-13.58056, -172.71368], [-13.57853, -172.71814], [-13.57779, -172.721], [-13.57663, -172.72443], [-13.57871, -172.72711], [-13.5816, -172.7288], [-13.58687, -172.7272], [-13.59186, -172.72555], [-13.59796, -172.72136], [-13.60133, -172.71691], [-13.60779, -172.70819], [-13.61395, -172.70146], [-13.61373, -172.69762], [-13.61455, -172.69367], [-13.61666, -172.68884], [-13.62046, -172.68266], [-13.62479, -172.67907], [-13.63091, -172.67628], [-13.63533, -172.67342], [-13.63866, -172.67103], [-13.641, -172.66971], [-13.64327, -172.66793], [-13.64551, -172.66675], [-13.64761, -172.6645], [-13.64906, -172.6609], [-13.65104, -172.65623], [-13.65338, -172.65291], [-13.65781, -172.64905], [-13.66101, -172.64642], [-13.66572, -172.64355], [-13.66916, -172.64141], [-13.67286, -172.63939], [-13.67685, -172.63706], [-13.67825, -172.63309], [-13.67903, -172.63048], [-13.68022, -172.62711], [-13.68207, -172.62489], [-13.68508, -172.62017], [-13.68693, -172.61892], [-13.69037, -172.61521], [-13.69305, -172.61292], [-13.69481, -172.61063], [-13.69794, -172.60914], [-13.703, -172.60613], [-13.70439, -172.60427], [-13.70611, -172.60401], [-13.70687, -172.60239], [-13.70906, -172.59928], [-13.71165, -172.59788], [-13.71477, -172.59615], [-13.71867, -172.59455], [-13.721, -172.59221], [-13.72186, -172.58975], [-13.72273, -172.58758], [-13.72459, -172.58231], [-13.72634, -172.5797], [-13.72674, -172.5762], [-13.73041, -172.57182], [-13.73379, -172.56937], [-13.73607, -172.56649], [-13.73786, -172.5618], [-13.74021, -172.56035], [-13.7442, -172.5565], [-13.74752, -172.55381], [-13.74997, -172.55008], [-13.75031, -172.5483], [-13.75181, -172.544], [-13.75408, -172.54172], [-13.75715, -172.54062], [-13.761, -172.5384], [-13.76346, -172.53697], [-13.7657, -172.53359], [-13.7667, -172.53067], [-13.76705, -172.52733], [-13.76825, -172.52435], [-13.76986, -172.52008], [-13.76952, -172.51627], [-13.77075, -172.51259], [-13.77284, -172.512], [-13.77648, -172.51402], [-13.77911, -172.51355], [-13.78261, -172.51337], [-13.78611, -172.51243], [-13.78802, -172.51292], [-13.79041, -172.51227], [-13.79252, -172.51231], [-13.79583, -172.50826], [-13.79722, -172.50421], [-13.79746, -172.50084], [-13.79711, -172.49195], [-13.79518, -172.48639], [-13.7908, -172.48156], [-13.78982, -172.47905], [-13.78577, -172.47506], [-13.78406, -172.47141], [-13.78155, -172.46978], [-13.77846, -172.46662], [-13.77704, -172.46313], [-13.77575, -172.4582], [-13.77419, -172.44917], [-13.77428, -172.44524], [-13.77496, -172.44117], [-13.77477, -172.43617], [-13.77528, -172.43193], [-13.77524, -172.42727], [-13.77583, -172.41979], [-13.77532, -172.41696], [-13.77411, -172.4141], [-13.77429, -172.41076], [-13.77296, -172.40648], [-13.76981, -172.40061], [-13.76813, -172.39681], [-13.76743, -172.39397], [-13.7688, -172.39085], [-13.77177, -172.3896], [-13.77604, -172.38722], [-13.77734, -172.38514], [-13.77538, -172.38086], [-13.77642, -172.37534], [-13.77512, -172.37022], [-13.77308, -172.36679], [-13.76876, -172.36442], [-13.76427, -172.36271], [-13.7601, -172.36296], [-13.75816, -172.36147], [-13.75801, -172.35847], [-13.75661, -172.35465], [-13.75516, -172.34867], [-13.75437, -172.34308], [-13.7553, -172.3382], [-13.75507, -172.33275], [-13.75611, -172.32564], [-13.75696, -172.32176], [-13.75347, -172.31699], [-13.75268, -172.31409], [-13.74899, -172.31343], [-13.74584, -172.31305], [-13.74787, -172.31291], [-13.75232, -172.31412], [-13.75268, -172.31215], [-13.7531, -172.3094], [-13.7555, -172.30742], [-13.75836, -172.3015], [-13.75913, -172.29886], [-13.75787, -172.29199], [-13.7589, -172.28753], [-13.75683, -172.2851], [-13.75457, -172.28267], [-13.7515, -172.27999], [-13.74788, -172.27709], [-13.74621, -172.27172], [-13.74699, -172.26661], [-13.74482, -172.26079], [-13.74421, -172.25391], [-13.7397, -172.24837], [-13.73894, -172.24228], [-13.73497, -172.2331], [-13.73239, -172.2262], [-13.73331, -172.22311], [-13.73567, -172.22135], [-13.73986, -172.21914], [-13.74335, -172.21821],
 ];
 
-// Route line - solid, thicker
 var routeLine = L.polyline(routeCoords, {color: '#2e86c1', weight: 5, opacity: 0.8}).addTo(map);
 
-// Add arrow markers along the route for direction
-// Use bearing between points: atan2(dlng, dlat) converted to degrees
-// Note: lat=y, lng=x, but screen coords flip y, and CSS rotation is clockwise from up (north=0)
+// Direction arrows along the route (bearing: north=0, east=90)
 var arrowStep = Math.floor(routeCoords.length / 20);
 for (var ai = arrowStep; ai < routeCoords.length - arrowStep; ai += arrowStep) {
   var p1 = routeCoords[ai - 2];
   var p2 = routeCoords[ai + 2] || routeCoords[ai + 1] || routeCoords[ai];
-  // Bearing: north=0, east=90, south=180, west=270
-  var dLng = p2[1] - p1[1];
-  var dLat = p2[0] - p1[0];
-  var bearing = (Math.atan2(dLng, dLat) * 180 / Math.PI + 360) % 360;
+  var bearing = (Math.atan2(p2[1] - p1[1], p2[0] - p1[0]) * 180 / Math.PI + 360) % 360;
   var mid = [(p1[0]+p2[0])/2, (p1[1]+p2[1])/2];
   var aIcon = L.divIcon({
     className: '',
@@ -777,32 +569,22 @@ for (var ai = arrowStep; ai < routeCoords.length - arrowStep; ai += arrowStep) {
 }
 
 // Ferry lines - curved arcs between Mulifanua Wharf and Salelologa
-// Both start/end at same points, but curve in opposite directions
 var wharfLat = -13.8301, wharfLng = -172.0360;
 var saleLat = -13.7434, saleLng = -172.2186;
-
 function curvedLine(lat1, lng1, lat2, lng2, bulge) {
   var pts = [];
   for (var t = 0; t <= 1; t += 0.05) {
-    var lat = lat1 + (lat2 - lat1) * t + bulge * Math.sin(t * Math.PI);
-    var lng = lng1 + (lng2 - lng1) * t;
-    pts.push([lat, lng]);
+    pts.push([lat1 + (lat2 - lat1) * t + bulge * Math.sin(t * Math.PI), lng1 + (lng2 - lng1) * t]);
   }
   return pts;
 }
-
-// Outbound ferry (curves south)
 var outbound = curvedLine(wharfLat, wharfLng, saleLat, saleLng, -0.03);
 L.polyline(outbound, {color: '#27ae60', weight: 3, opacity: 0.7, dashArray: '8 6'}).addTo(map);
-
-// Return ferry (curves north)
 var returnLine = curvedLine(saleLat, saleLng, wharfLat, wharfLng, -0.03);
 L.polyline(returnLine, {color: '#e74c3c', weight: 3, opacity: 0.7, dashArray: '8 6'}).addTo(map);
-
-// Mulifanua area connecting line (airport → motel → wharf) - single orange line
+// Mulifanua area connecting line (airport → resort → bikes → wharf)
 L.polyline([[-13.8311, -172.0078], [-13.8263, -172.0287], [-13.8475, -172.0515], [-13.8300, -172.0365]], {color: '#7f8c8d', weight: 2, opacity: 0.7, dashArray: '4 4'}).addTo(map);
 
-// Direction arrows on ferry curves
 function addArrowAt(lat, lng, bearing, color) {
   var ai = L.divIcon({
     className: '',
@@ -811,12 +593,10 @@ function addArrowAt(lat, lng, bearing, color) {
   });
   L.marker([lat, lng], {icon: ai, interactive: false}).addTo(map);
 }
-// Outbound arrow (on curved line, heading northwest)
 addArrowAt(outbound[10][0], outbound[10][1], 310, '#27ae60');
-// Return arrow (on curved line, heading southeast)
 addArrowAt(returnLine[10][0], returnLine[10][1], 130, '#e74c3c');
 
-// Add markers
+// Markers
 const markers = {};
 function gmaps(s) { return 'https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng; }
 function infoHtml(s) {
@@ -884,11 +664,83 @@ function fromHash() {
   }
 }
 
+// ===== GPS "locate me": tap = show + follow; drag pauses follow; tap again = re-centre; tap while following = off =====
+const gps = {watch: null, follow: false, first: true, last: null, dot: null, ring: null, btn: null, status: document.getElementById('gpsStatus')};
+function gpsMsg(text, isErr) {
+  gps.status.textContent = text;
+  gps.status.className = isErr ? 'err' : '';
+  gps.status.style.display = text ? 'block' : 'none';
+}
+function gpsState(st) { gps.btn.className = 'loc-btn ' + st; }
+function gpsStop() {
+  if (gps.watch !== null) navigator.geolocation.clearWatch(gps.watch);
+  gps.watch = null; gps.follow = false;
+  if (gps.dot) { map.removeLayer(gps.dot); map.removeLayer(gps.ring); gps.dot = gps.ring = null; }
+  gpsState(''); gpsMsg('');
+}
+function gpsToggle() {
+  if (gps.watch === null) {
+    if (!navigator.geolocation) return gpsMsg('GPS not available in this browser', true);
+    gps.follow = true; gps.first = true; gpsState('wait'); gpsMsg('Finding you…');
+    gps.watch = navigator.geolocation.watchPosition(gpsFix, gpsErr, {enableHighAccuracy: true, maximumAge: 5000, timeout: 30000});
+  } else if (!gps.follow) {
+    gps.follow = true; gpsState('follow');
+    if (gps.last) map.setView(gps.last, Math.max(map.getZoom(), 15));
+  } else {
+    gpsStop();
+  }
+}
+function gpsFix(p) {
+  const ll = [p.coords.latitude, p.coords.longitude], acc = Math.round(p.coords.accuracy);
+  gps.last = ll;
+  if (!gps.dot) {
+    gps.ring = L.circle(ll, {radius: acc, color: '#1a73e8', weight: 1, opacity: 0.5, fillColor: '#1a73e8', fillOpacity: 0.12, interactive: false}).addTo(map);
+    gps.dot = L.circleMarker(ll, {radius: 8, color: '#fff', weight: 3, fillColor: '#1a73e8', fillOpacity: 1, interactive: false}).addTo(map);
+  } else {
+    gps.ring.setLatLng(ll).setRadius(acc);
+    gps.dot.setLatLng(ll);
+  }
+  if (gps.follow) {
+    if (gps.first) map.setView(ll, Math.max(map.getZoom(), 15)); else map.panTo(ll);
+  }
+  gps.first = false;
+  gpsState(gps.follow ? 'follow' : 'on');
+  gpsMsg('📍 ±' + acc + ' m' + (gps.follow ? ' · following' : ''));
+}
+function gpsErr(e) {
+  if (e.code === 1) {
+    gpsStop();
+    gpsMsg(window.isSecureContext === false
+      ? 'Location blocked: this browser only allows GPS on https pages. Open the website version, or open the saved file in Chrome.'
+      : 'Location permission denied. Allow location for this page in browser settings.', true);
+  } else if (e.code === 3) {
+    gpsMsg('Waiting for GPS fix… (go outside / clear sky)');
+  } else {
+    gpsMsg('GPS unavailable: ' + (e.message || 'no position'), true);
+  }
+}
+const LocateControl = L.Control.extend({
+  options: {position: 'topleft'},
+  onAdd() {
+    const wrap = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+    const b = L.DomUtil.create('a', 'loc-btn', wrap);
+    b.href = '#'; b.title = 'Show my location (GPS)'; b.setAttribute('role', 'button');
+    b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4" fill="currentColor"/><circle cx="12" cy="12" r="8"/><path d="M12 1v3M12 20v3M1 12h3M20 12h3"/></svg>';
+    L.DomEvent.disableClickPropagation(wrap);
+    L.DomEvent.on(b, 'click', e => { L.DomEvent.preventDefault(e); gpsToggle(); });
+    gps.btn = b;
+    return wrap;
+  }
+});
+new LocateControl().addTo(map);
+map.on('dragstart', () => {
+  if (gps.watch !== null && gps.follow) { gps.follow = false; gpsState('on'); if (gps.last) gpsMsg(gps.status.textContent.replace(' · following', '')); }
+});
+
 // Fit map to show everything, then honour #stop-id / #day links
-map.fitBounds(L.latLngBounds(stops.map(s => [s.lat, s.lng])).pad(0.1));
+map.fitBounds(L.latLngBounds(stops.map(s => [s.lat, s.lng])).pad(0.1), {animate: false});
 window.addEventListener('hashchange', fromHash);
 if (location.hash) fromHash();
-
 </script>
 <script src="download.js" defer></script>
 </body>
