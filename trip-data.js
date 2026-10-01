@@ -17,7 +17,7 @@ window.TRIP = {
     // ===== Upolu base =====
     {id:'airport', cat:'base', day:'sat3', lat:-13.8311, lng:-172.0078, name:'Faleolo Airport', when:'Sat 3 05:00 arrive • Sun 11 05:00 depart',
      details:'Arrive 05:00 Sat 3 Oct (Qantas via Brisbane). Get WST cash here. Taxi ~5 km to the resort. Home: ~03:00 taxi Sun 11 for the 05:00 Fiji Airways flight via Nadi (lands Canberra 12:40).'},
-    {id:'samoa-beach-resort', cat:'base', day:'sat3', num:'🏨', lat:-13.8263, lng:-172.0287, name:'Samoa Beach Resort, Mulifanua', when:'Nights: Fri 2 (early check-in Sat), Sat 3, Sun 4 • Sat 10',
+    {id:'samoa-beach-resort', cat:'stay', day:'sat3', num:'0', lat:-13.8263, lng:-172.0287, name:'Samoa Beach Resort, Mulifanua', when:'Nights: Fri 2 (early check-in Sat), Sat 3, Sun 4 • Sat 10',
      details:'Two Queen Oceanfront room. Breakfast included. On Sat 10 the room is ready from 15:00.', phone:'+685 844 5611 / +685 777 1288'},
     {id:'outdoor-samoa', cat:'transport', day:'mon5', lat:-13.8475, lng:-172.0515, name:'Outdoor Samoa (bike hire)', when:'Mon 5 08:00 pickup • Sat 10 return by 16:00',
      details:'Pick up bikes + panniers 08:00 Mon. Return Sat 10 by 16:00 (Saturday exception agreed). Closed Sundays.', phone:'Lenka (WhatsApp) +64 21 372233'},
