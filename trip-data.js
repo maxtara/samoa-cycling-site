@@ -27,15 +27,15 @@ window.TRIP = {
      details:'Main ATM town on Savai\'i. Return: be at the wharf 11:15 Sat for the 12:00 ferry (the 16:00 is too late for the bike return).'},
 
     // ===== Overnights on Savai'i =====
-    {id:'tailua', cat:'stay', day:'mon5', num:'5', lat:-13.4481, lng:-172.3750, name:'Tailua Beach Fales, Manase', when:'Night of Mon 5 Oct',
+    {id:'tailua', cat:'stay', day:'mon5', num:'1', lat:-13.4481, lng:-172.3750, name:'Tailua Beach Fales, Manase', when:'Night of Mon 5 Oct',
      details:'Beach fales on Manase beach. Dinner + breakfast likely included — confirm on arrival.', phone:'+685 726 8149'},
-    {id:'vaimoana', cat:'stay', day:'tue6', num:'6', approx:true, lat:-13.5154, lng:-172.6274, name:'Va-i-Moana Seaside Lodge, Asau', when:'Night of Tue 6 Oct',
+    {id:'vaimoana', cat:'stay', day:'tue6', num:'2', approx:true, lat:-13.5154, lng:-172.6274, name:'Va-i-Moana Seaside Lodge, Asau', when:'Night of Tue 6 Oct',
      details:'Open fale. Breakfast only — dinner NOT included (lodge restaurant). Check-in 13:00, checkout 10:00.', phone:'+685 58140'},
-    {id:'seeti', cat:'stay', day:'wed7', num:'7', lat:-13.5015, lng:-172.7899, name:'Se\'eti Beach Fales, Falealupo', when:'Night of Wed 7 Oct',
+    {id:'seeti', cat:'stay', day:'wed7', num:'3', lat:-13.5015, lng:-172.7899, name:'Se\'eti Beach Fales, Falealupo', when:'Night of Wed 7 Oct',
      details:'Beach fales on Falealupo beach. Meals to confirm on arrival. Very remote — carry snacks.', phone:'+685 776 5342 (WhatsApp)'},
-    {id:'satuiatua', cat:'stay', day:'thu8', num:'8', approx:true, lat:-13.7075, lng:-172.6000, name:'Satuiatua Beach Fales', when:'Night of Thu 8 Oct',
+    {id:'satuiatua', cat:'stay', day:'thu8', num:'4', approx:true, lat:-13.7075, lng:-172.6000, name:'Satuiatua Beach Fales', when:'Night of Thu 8 Oct',
      details:'Booked by phone, 2 single beds. Meals to confirm on arrival.', phone:'+685 846 4119'},
-    {id:'jetover', cat:'stay', day:'fri9', num:'9', lat:-13.7378, lng:-172.2194, name:'Jet Over Hotel, Salelologa', when:'Night of Fri 9 Oct',
+    {id:'jetover', cat:'stay', day:'fri9', num:'5', lat:-13.7378, lng:-172.2194, name:'Jet Over Hotel, Salelologa', when:'Night of Fri 9 Oct',
      details:'Enclosed room with AC, ~1 km from the wharf. ATM in Salelologa.', phone:'+685 51565 / 51566 • info@jetoverhotel.ws'},
 
     // ===== Mon 5: Salelologa → Manase =====

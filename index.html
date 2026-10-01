@@ -142,7 +142,7 @@
   <div id="map"></div>
   <div class="legend">
     <div class="legend-item"><span class="legend-dot" style="background:#27ae60"></span> Upolu base</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#2e86c1"></span> Overnight (Oct date)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2e86c1"></span> Overnight (riding day 1–5)</div>
     <div class="legend-item"><span class="legend-dot" style="background:#7f8c8d"></span> Ferry/bikes</div>
     <div class="legend-item"><span class="legend-dot" style="background:#e74c3c"></span> Must-do</div>
     <div class="legend-item"><span class="legend-dot" style="background:#e67e22"></span> Sight</div>
@@ -182,9 +182,9 @@ function icon(color, size) {
 function numIcon(num, color) {
   return L.divIcon({
     className: '',
-    html: '<div style="width:28px;height:28px;border-radius:50%;background:'+color+';border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);color:white;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;font-family:sans-serif;">'+num+'</div>',
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
+    html: '<div style="width:32px;height:32px;border-radius:50%;background:'+color+';border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.5);color:white;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;font-family:sans-serif;">'+num+'</div>',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
   });
 }
 
@@ -834,7 +834,7 @@ function infoHtml(s) {
 stops.forEach(s => {
   const color = COLORS[s.cat] || '#e67e22';
   const mk = s.num
-    ? L.marker([s.lat, s.lng], {icon: numIcon(s.num, color)})
+    ? L.marker([s.lat, s.lng], {icon: numIcon(s.num, color), zIndexOffset: 10000, riseOnHover: true})
     : L.marker([s.lat, s.lng], {icon: icon(color, s.cat === 'must' ? 18 : 14)});
   mk.bindPopup('<div class="popup"><h3>' + s.name + '</h3>' + infoHtml(s) + '</div>', {maxWidth: 300});
   mk.addTo(map);
@@ -849,7 +849,8 @@ TRIP.days.forEach(d => {
   const head = document.createElement('div');
   head.className = 'day-head';
   head.id = 'day-' + d.key;
-  head.innerHTML = '<b>' + d.date + ' — ' + d.title + '</b>' + (d.km ? ' <span>' + d.km + ' • ⛰️ ' + d.elev + '</span>' : '') + '<div>' + d.summary + '</div>';
+  const dayNum = d.ride && (stops.find(s => s.id === d.stay) || {}).num;
+  head.innerHTML = '<b>' + (dayNum ? 'Day ' + dayNum + ' · ' : '') + d.date + ' — ' + d.title + '</b>' + (d.km ? ' <span>' + d.km + ' • ⛰️ ' + d.elev + '</span>' : '') + '<div>' + d.summary + '</div>';
   sidebar.appendChild(head);
   items.forEach(s => {
     const card = document.createElement('div');

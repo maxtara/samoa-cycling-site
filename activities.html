@@ -57,13 +57,13 @@
   function gmaps(s) { return 'https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng; }
   var nav = document.getElementById('nav'), out = document.getElementById('days');
 
-  TRIP.days.filter(function (d) { return d.ride; }).forEach(function (d) {
+  TRIP.days.filter(function (d) { return d.ride; }).forEach(function (d, i) {
     nav.insertAdjacentHTML('beforeend', '<a href="#' + d.key + '">' + d.date.replace(' Oct', '') + '</a>');
     var acts = TRIP.stops.filter(function (s) { return s.day === d.key && COLORS[s.cat]; });
     var route = acts.filter(function (s) { return !/^At destination/.test(s.when); });
     var dest = acts.filter(function (s) { return /^At destination/.test(s.when); });
     var stay = byId[d.stay];
-    var h = '<section class="day" id="' + d.key + '"><h2>' + d.date + ' — ' + esc(d.title) + '</h2>' +
+    var h = '<section class="day" id="' + d.key + '"><h2>Day ' + (i + 1) + ' · ' + d.date + ' — ' + esc(d.title) + '</h2>' +
       '<div class="sub"><b>' + d.km + '</b> • ⛰️ ' + d.elev + ' — ' + esc(d.summary) + '</div>';
     if (stay) h += '<div class="stay">🏠 Tonight: <a href="index.html#' + stay.id + '">' + esc(stay.name) + '</a>' + (stay.phone ? ' • 📞 ' + esc(stay.phone) : '') + '</div>';
     function list(title, arr) {
