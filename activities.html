@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Samoa — Optional activities by day</title>
+<script src="trip-data.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; color: #1a1a2e; line-height: 1.5; }
+  .container { max-width: 900px; margin: 0 auto; padding: 14px 14px 70px; }
+  h1 { color: #fff; background: linear-gradient(135deg, #1a5276, #2e86c1); padding: 20px; border-radius: 12px; font-size: 22px; }
+  h1 small { display: block; font-weight: 400; font-size: 14px; opacity: 0.85; margin-top: 4px; }
+  nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+  nav a { background: #fff; color: #1a5276; text-decoration: none; padding: 6px 12px; border-radius: 16px; font-size: 13px; font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .day { background: #fff; border-radius: 12px; padding: 16px; margin: 16px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); scroll-margin-top: 10px; }
+  .day h2 { color: #1a5276; font-size: 18px; }
+  .day .sub { font-size: 13px; color: #555; margin: 4px 0 8px; }
+  .day .sub b { color: #1a5276; }
+  .stay { font-size: 13px; background: #e8f8f5; color: #1a7a5c; padding: 6px 10px; border-radius: 8px; margin-bottom: 8px; }
+  .stay a { color: inherit; }
+  .group { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin: 12px 0 4px; }
+  .act { display: block; border-left: 5px solid #e67e22; background: #fafbfc; border-radius: 8px; padding: 10px 12px; margin: 8px 0; cursor: pointer; }
+  .act:hover { background: #fef9e7; }
+  .act h3 { font-size: 15px; color: #1a5276; }
+  .act .tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0; }
+  .act .tags span { font-size: 11px; background: #eaf2f8; padding: 2px 8px; border-radius: 10px; }
+  .act .tags span.must { background: #fdedec; color: #c0392b; font-weight: 700; }
+  .act p { font-size: 13px; }
+  .act .warn { font-size: 12px; background: #fef3cd; padding: 4px 8px; border-radius: 6px; margin-top: 4px; }
+  .act .links { font-size: 12px; margin-top: 6px; }
+  .act .links a { color: #2e86c1; font-weight: 600; margin-right: 12px; }
+  .note { font-size: 13px; color: #555; background: #fff; border-radius: 12px; padding: 14px 16px; }
+  .top { font-size: 13px; }
+  .top a { color: #2e86c1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🎯 Optional activities by day<small>Along each day's ride or at that night's stop. Tap any activity to see it on the map.</small></h1>
+  <p class="top" style="margin-top:8px"><a href="index.html">🗺 Map</a> • <a href="option-b.html">📋 Itinerary</a></p>
+  <nav id="nav"></nav>
+  <div id="days"></div>
+  <div class="note">
+    <b>Sun 4 & Sat 10:</b> no riding — pool/beach at Samoa Beach Resort. Sat 10 is ferry + bike return only.<br>
+    <b>Cash:</b> village/site fees are small and cash only (WST). Fees are approximate and change often.<br>
+    <b>Dress:</b> cover shoulders/knees walking through villages; no swimming near villages on Sunday.
+  </div>
+</div>
+<script>
+(function () {
+  var COLORS = {must:'#e74c3c', sight:'#e67e22', swim:'#1abc9c', cave:'#9b59b6'};
+  var LABEL = {must:'⭐ Must-do', sight:'Sight', swim:'Swim / snorkel', cave:'Cave'};
+  var byId = {};
+  TRIP.stops.forEach(function (s) { byId[s.id] = s; });
+  function esc(t) { var d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+  function gmaps(s) { return 'https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng; }
+  var nav = document.getElementById('nav'), out = document.getElementById('days');
+
+  TRIP.days.filter(function (d) { return d.ride; }).forEach(function (d) {
+    nav.insertAdjacentHTML('beforeend', '<a href="#' + d.key + '">' + d.date.replace(' Oct', '') + '</a>');
+    var acts = TRIP.stops.filter(function (s) { return s.day === d.key && COLORS[s.cat]; });
+    var route = acts.filter(function (s) { return !/^At destination/.test(s.when); });
+    var dest = acts.filter(function (s) { return /^At destination/.test(s.when); });
+    var stay = byId[d.stay];
+    var h = '<section class="day" id="' + d.key + '"><h2>' + d.date + ' — ' + esc(d.title) + '</h2>' +
+      '<div class="sub"><b>' + d.km + '</b> • ⛰️ ' + d.elev + ' — ' + esc(d.summary) + '</div>';
+    if (stay) h += '<div class="stay">🏠 Tonight: <a href="index.html#' + stay.id + '">' + esc(stay.name) + '</a>' + (stay.phone ? ' • 📞 ' + esc(stay.phone) : '') + '</div>';
+    function list(title, arr) {
+      if (!arr.length) return '';
+      return '<div class="group">' + title + '</div>' + arr.map(function (s) {
+        var tags = '<span' + (s.cat === 'must' ? ' class="must"' : '') + '>' + LABEL[s.cat] + '</span><span>📍 ' + esc(s.when) + '</span>' +
+          (s.time ? '<span>⏱ ' + esc(s.time) + '</span>' : '') + (s.cost ? '<span>💵 ' + esc(s.cost) + '</span>' : '');
+        return '<div class="act" style="border-left-color:' + COLORS[s.cat] + '" data-id="' + s.id + '">' +
+          '<h3>' + esc(s.name) + '</h3><div class="tags">' + tags + '</div><p>' + esc(s.details) + '</p>' +
+          (s.warn ? '<div class="warn">⚠️ ' + esc(s.warn) + '</div>' : '') +
+          (s.phone ? '<p>📞 ' + esc(s.phone) + '</p>' : '') +
+          '<div class="links"><a href="index.html#' + s.id + '">🗺 Show on map</a><a href="' + gmaps(s) + '" target="_blank" rel="noopener">Google Maps' + (s.approx ? ' (approx.)' : '') + '</a></div></div>';
+      }).join('');
+    }
+    h += list('Along the way', route) + list('At ' + (stay ? stay.name.split(',').pop().replace(/ Beach Fales$/, '').trim() : 'destination'), dest) + '</section>';
+    out.insertAdjacentHTML('beforeend', h);
+  });
+
+  out.addEventListener('click', function (e) {
+    if (e.target.closest('a')) return;
+    var card = e.target.closest('.act');
+    if (card) location.href = 'index.html#' + card.dataset.id;
+  });
+  if (location.hash) { var el = document.getElementById(location.hash.slice(1)); if (el) el.scrollIntoView(); }
+})();
+</script>
+<script src="download.js" defer></script>
+</body>
+</html>

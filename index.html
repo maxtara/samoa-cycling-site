@@ -6,6 +6,7 @@
 <title>Samoa — 5-Day Cycling Adventure</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="trip-data.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; overflow: hidden; height: 100vh; }
@@ -70,6 +71,19 @@
   .stop-card .details { font-size: 12px; color: #333; line-height: 1.5; }
   .stop-card .accom { font-size: 11px; color: #1a7a5c; margin-top: 6px; padding: 5px 8px; background: #e8f8f5; border-radius: 6px; }
 
+  .stop-card .when { font-size: 12px; color: #555; margin-bottom: 4px; }
+  .stop-card .warn, .popup .warn { font-size: 12px; background: #fef3cd; padding: 5px 8px; border-radius: 6px; margin-top: 6px; }
+  .stop-card .links, .popup .links { font-size: 12px; margin-top: 6px; }
+  .day-head { position: sticky; top: -12px; z-index: 5; background: #1a5276; color: white; padding: 8px 12px; border-radius: 8px; margin: 14px 0 6px; font-size: 13px; }
+  .day-head span { opacity: 0.8; font-size: 12px; }
+  .day-head div { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+  .popup { font-family: sans-serif; font-size: 13px; }
+  .popup h3 { margin: 0 0 6px; color: #1a5276; font-size: 15px; }
+  .popup .when { font-size: 12px; color: #555; margin-bottom: 4px; }
+  .popup .meta span { display: inline-block; background: #eaf2f8; padding: 1px 6px; border-radius: 8px; margin: 0 4px 4px 0; font-size: 11px; }
+  .popup .details { margin-bottom: 4px; }
+  .popup .accom { font-size: 12px; background: #e8f8f5; padding: 5px 8px; border-radius: 4px; margin-top: 4px; }
+
   /* Map container needs relative for legend positioning */
   #map-container { position: relative; }
 </style>
@@ -92,12 +106,10 @@
   <div class="menu-section">
     <h3>Trip Stats</h3>
     <div class="info-grid">
-      <div class="info-item"><div class="label">Distance</div><div class="value">~211km</div></div>
-      <div class="info-item"><div class="label">Riding Days</div><div class="value">5</div></div>
-      <div class="info-item"><div class="label">Elevation</div><div class="value">~1,230m</div></div>
-      <div class="info-item"><div class="label">Est. Cost</div><div class="value">~$3,500 <small>2 ppl</small></div></div>
+      <div class="info-item"><div class="label">Distance</div><div class="value">~210km</div></div>
+      <div class="info-item"><div class="label">Riding Days</div><div class="value">5 <small>Mon–Fri</small></div></div>
+      <div class="info-item"><div class="label">Elevation</div><div class="value">~1,150m</div></div>
       <div class="info-item"><div class="label">Dates</div><div class="value">Oct 3–11</div></div>
-      <div class="info-item"><div class="label">Riders</div><div class="value">2 <small>(dad+son)</small></div></div>
     </div>
   </div>
 
@@ -112,16 +124,15 @@
 
   <div class="menu-section">
     <h3>Pages</h3>
-    <a href="option-b.html">📋 Full Itinerary<span class="link-sub">Hour-by-hour timeline, meals, costs</span></a>
-    <a href="option-b-hotels.html">🏨 Hotel Options<span class="link-sub">3 options per stop with prices & reviews</span></a>
-    <a href="option-b.html#total-cost">💰 Pricing Breakdown<span class="link-sub">Flights, bikes, accommodation, food</span></a>
+    <a href="option-b.html">📋 Itinerary<span class="link-sub">Day-by-day plan, stays, ferries, meals</span></a>
+    <a href="activities.html">🎯 Activities by day<span class="link-sub">Optional stops along each day's ride</span></a>
   </div>
 
 <div class="menu-section">
     <h3>Key Info</h3>
-    <a href="#">🚢 Ferry: No booking needed (foot passengers)<span class="link-sub">3 sailings weekdays, 2 on Saturday. SAT$10pp + $10/bike</span></a>
-    <a href="#">🚲 Bikes: Outdoor Samoa, Mulifanua<span class="link-sub">NZD$63/day. Merida Crossway. Helmet+lock+tools incl.</span></a>
-    <a href="#">🌡️ Weather: 26–30°C, humid. Water 28°C<span class="link-sub">Ride early (7-8am). Rest midday.</span></a>
+    <a href="#">🚢 Ferry: no booking needed<span class="link-sub">Mon 5: 10:00 out • Sat 10: 12:00 back. ~WST 40 for 2 people + 2 bikes each way</span></a>
+    <a href="#">🚲 Bikes: Outdoor Samoa, Mulifanua<span class="link-sub">Pickup Mon 08:00 • Return Sat by 16:00. Closed Sundays</span></a>
+    <a href="#">🌡️ Weather: 26–30°C, humid. Water 28°C<span class="link-sub">Ride early. Sunset ~18:25</span></a>
     <a href="https://cyclejourneys.co.nz/cycle-samoa/faq/" target="_blank">&#10067; FAQ (Cycle Journeys)<span class="link-sub">Common questions about cycling in Samoa</span></a>
   </div>
 </div>
@@ -130,12 +141,13 @@
 <div id="map-container">
   <div id="map"></div>
   <div class="legend">
-    <div class="legend-item"><span class="legend-dot" style="background:#27ae60"></span> Start/End</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#2e86c1"></span> Overnight</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#e67e22"></span> Activity</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#27ae60"></span> Upolu base</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2e86c1"></span> Overnight (Oct date)</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#7f8c8d"></span> Ferry/bikes</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c"></span> Must-do</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e67e22"></span> Sight</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#1abc9c"></span> Swim/snorkel</div>
     <div class="legend-item"><span class="legend-dot" style="background:#9b59b6"></span> Cave</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c"></span> Must-Do</div>
-    <div class="legend-item"><span class="legend-dot" style="background:#1abc9c"></span> Snorkel</div>
   </div>
 </div>
 
@@ -176,155 +188,10 @@ function numIcon(num, color) {
   });
 }
 
-// All stops & points of interest
-const stops = [
-  // === ARRIVAL (Sat 3 Oct) ===
-  {id:'airport', lat:-13.8311, lng:-172.0078, name:'Faleolo International Airport', type:'activity', day:'Arrival', num:'✈️',
-   date:'Sat 3 Oct', dist:'—', elev:'—',
-   details:'Arrive 5:35pm Saturday (Virgin Australia from Brisbane). Short taxi to Salty Lodge.',
-   accom:'—', 
-   color:'#e67e22'},
-
-  {id:'salty-night0', lat:-13.8474, lng:-172.0514, name:'Salty Lodge (Night 0)', type:'overnight', day:'Night 0', num:'0',
-   date:'Sat 3 Oct', dist:'~5km from airport', elev:'—',
-   details:'Arrive evening. Settle in. Right next to Outdoor Samoa bike depot.',
-   accom:'Salty Lodge ~AUD$100/room', 
-   color:'#27ae60'},
-
-  {id:'salty-night1', lat:-13.8474, lng:-172.0514, name:'Salty Lodge (Night 1)', type:'overnight', day:'Night 1', num:'1',
-   date:'Sun 4 Oct', dist:'—', elev:'—',
-   details:'Chill day. Can\'t pick up bikes (Sunday). Explore the area, rest up for the ride.',
-   accom:'Salty Lodge ~AUD$100/room', 
-   color:'#27ae60'},
-
-  // === FERRY TO SAVAI'I (Mon 5 Oct) ===
-  {id:'mulifanua-wharf', lat:-13.8301, lng:-172.0360, name:'Mulifanua Ferry Wharf', type:'activity', day:'Day 1', num:'⛴️',
-   date:'Mon 5 Oct 2pm', dist:'~2km from lodge', elev:'—',
-   details:'Pick up bikes from Outdoor Samoa AM. Ride to wharf. 2pm ferry to Savai\'i. ~90 min crossing. SAT$10pp + SAT$10/bike.',
-   accom:'—', 
-   color:'#e67e22'},
-
-  {id:'salelologa', lat:-13.7434, lng:-172.2186, name:'Salelologa Wharf & Market', type:'activity', day:'Day 1', num:'⚓',
-   date:'Mon 5 Oct ~3:30pm', dist:'Ferry', elev:'—',
-   details:'Ferry terminal + Main ATM on Savai\'i! Stock up on cash. Salelologa Market for snacks, bread, fruit. DMC (Samoan KFC) & Harbourside Cafe.',
-   accom:'—',
-   color:'#e67e22'},
-
-  // === RIDE DAY 1 (Mon 5 Oct) ===
-  {id:'lava', lat:-13.4663, lng:-172.3403, name:'Saleaula Lava Fields', type:'activity', day:'Day 1 en route', num:'🌋',
-   date:'Mon 5 Oct', dist:'33km from Salelologa', elev:'—',
-   details:'Destroyed LMS Church with lava frozen through arches. Virgin\'s Grave. Walk through dramatic lava landscape. Entry SAT$5 pp. ~45min stop.',
-   accom:'—', 
-   color:'#e67e22'},
-
-  {id:'manase', lat:-13.4485, lng:-172.3798, name:'Manase (Night 2)', type:'overnight', day:'Day 1', num:'2',
-   date:'Mon 5 Oct', dist:'56km', elev:'170m ✅',
-   details:'Arrive ~evening. Manase Beach swim & snorkel — calm turquoise lagoon, coral, tropical fish, possible turtles. Water 28°C.',
-   accom:'Tailua Beach Fales ~AUD$41pp (dinner+brekkie incl) | Jane\'s ~$32-41pp | Stevensons ~$65-130pp (pool, bar)',
-   color:'#2e86c1'},
-
-  // === RIDE DAY 2 (Tue 6 Oct) ===
-  {id:'fagamalo', lat:-13.4430, lng:-172.3533, name:'Fagamalo — Turtle Snorkelling', type:'activity', day:'Day 2 morning', num:'🐢',
-   date:'Tue 6 Oct ~07:30', dist:'6km from Manase', elev:'—',
-   details:'Dive Savai\'i (PADI) — snorkel with wild turtles inc. famous "Tomoko." ~1hr, ~SAT$50-80pp. Gear provided. Open mid-Mar to Oct — CONFIRM for early Oct! Also: Le Lagoto Resort has best pizza on Savai\'i.',
-   accom:'Savaii Lagoon Resort nearby (~AUD$55-80pp) if you want to stay',
-   color:'#1abc9c'},
-
-  {id:'peapea', lat:-13.5064, lng:-172.4780, name:'Pe\'ape\'a Cave', type:'cave', day:'Day 2 en route', num:'🦇',
-   date:'Tue 6 Oct ~10:00', dist:'~20km from Fagamalo', elev:'—',
-   details:'Lava tube with hundreds of white-rumped swiftlets navigating by clicking sounds. Guided tour, short walk in. Entry SAT$10pp. ~30min.',
-   accom:'—', 
-   color:'#9b59b6'},
-
-  {id:'dwarfcave', lat:-13.4626, lng:-172.4153, name:'Paia Dwarf\'s Cave', type:'cave', day:'Day 2 en route', num:'🕳️',
-   date:'Tue 6 Oct ~10:45', dist:'~2km from Pe\'ape\'a', elev:'—',
-   details:'Hobbit-hole entrance opens into generous cavern with underground pools of water. Local guide essential. Bring a GOOD torch! Entry SAT$10pp. ~45min.',
-   accom:'—', 
-   color:'#9b59b6'},
-
-  {id:'asau', lat:-13.5154, lng:-172.6274, name:'Asau Bay (Night 3)', type:'overnight', day:'Day 2', num:'3',
-   date:'Tue 6 Oct', dist:'38km', elev:'400m ⚠️ HILLY',
-   details:'Arrive ~1pm. Hardest ride day. Afternoon: Koko Plantation Tour (Samoan hot chocolate making + tastings). Beach swim in Asau Bay.',
-   accom:'Va-i-Moana Seaside Lodge ~AUD$35-47pp (dinner+brekkie incl) | Vaisala Hotel ~$35-50pp',
-   color:'#2e86c1'},
-
-  // === RIDE DAY 3 (Wed 7 Oct) ===
-  {id:'falealupo', lat:-13.4993, lng:-172.7879, name:'Falealupo (Night 4)', type:'overnight', day:'Day 3', num:'4',
-   date:'Wed 7 Oct', dist:'19km', elev:'200m ✅',
-   details:'EASIEST ride day! Arrive ~10am. BEST beach on Savai\'i. Activities: Canopy Walk (SAT$20), Giant\'s Cave, Star Mound, Moso\'s Footprint, House of Rock, Falealupo Nature Trail. Sunset at Cape Mulinuu (westernmost point of Samoa).',
-   accom:'Falealupo Beach Fales ~AUD$41pp (dinner+brekkie incl) ⚠️ ONLY 5 FALES — book ahead! | Se\'eti Beach Fales ~$35-41pp',
-   color:'#2e86c1'},
-
-  {id:'canopy', lat:-13.5150, lng:-172.7600, name:'Falealupo Canopy Walk', type:'activity', day:'Day 3 afternoon', num:'🌳',
-   date:'Wed 7 Oct ~1pm', dist:'Near Falealupo', elev:'—',
-   details:'Treetop walkway above rainforest canopy. SAT$20pp. Check if open (was closed for repairs 2024). Surrounding wildlife conservation area has a 400m nature walk.',
-   accom:'—', 
-   color:'#e67e22'},
-
-  {id:'mulinuu', lat:-13.5130, lng:-172.7950, name:'Cape Mulinuu — Sunset Point', type:'activity', day:'Day 3 evening', num:'🌅',
-   date:'Wed 7 Oct ~5:30pm', dist:'~2km south of Falealupo', elev:'—',
-   details:'Westernmost point of Samoa. Star Mound (ancient Polynesian site), Giant\'s Cave (lava tube cyclone shelter), Vaisuatoto Well. Then watch the sunset from the rock pools. Entry SAT$10pp. SPECTACULAR.',
-   accom:'—', 
-   color:'#e67e22'},
-
-  // === RIDE DAY 4 (Thu 8 Oct) ===
-  {id:'seaarch', lat:-13.5806, lng:-172.7119, name:'Sea Arch at Falelima', type:'activity', day:'Day 4 en route', num:'🪨',
-   date:'Thu 8 Oct ~8:45am', dist:'~15km from Falealupo', elev:'—',
-   details:'Natural rock arch on rocky shoreline. Some of the most scenic coastlines on Savai\'i. Free. Quick photo stop.',
-   accom:'—', 
-   color:'#e67e22'},
-
-  {id:'satuiatua', lat:-13.7079, lng:-172.6006, name:'Satuiatua (Night 5)', type:'overnight', day:'Day 4', num:'5',
-   date:'Thu 8 Oct', dist:'38km', elev:'301m ⚠️',
-   details:'Arrive ~10am. "BEST SNORKELLING IN ALL OF SAMOA" — swim out 30-50m to channel for spectacular coral & fish. Water 28°C. Also: Sea Arch, Lovers Leap (cliff viewpoint, SAT$2).',
-   accom:'Satuiatua Beach Resort ~AUD$44pp (dinner+brekkie incl) | Aganoa Lodge ~$200+pp (splurge, all-incl)',
-   color:'#2e86c1'},
-
-  // === RIDE DAY 5 (Fri 9 Oct) ===
-  {id:'blowholes', lat:-13.7838, lng:-172.5140, name:'Alofaaga Blowholes', type:'highlight', day:'Day 5 en route', num:'💨',
-   date:'Fri 9 Oct ~7:45am', dist:'~20km from Satuiatua', elev:'—',
-   details:'THE HIGHLIGHT OF THE TRIP! Multiple blowholes shooting seawater metres into the air. Locals throw coconuts in for extra drama! 1.5km unsealed detour. Entry SAT$5pp. Best at high tide. ~45min.',
-   accom:'—', 
-   color:'#e74c3c'},
-
-  {id:'waterfall', lat:-13.7454, lng:-172.3136, name:'Afu Aau Waterfall', type:'highlight', day:'Day 5 en route', num:'🏊',
-   date:'Fri 9 Oct ~9:45am', dist:'~15km from Blowholes', elev:'—',
-   details:'15-20m waterfall plunging into turquoise freshwater pool. SWIM HERE! Changing rooms & toilets. 650m flat dirt road from main road. Entry SAT$5pp. ~45min swimming. INCREDIBLE cooldown.',
-   accom:'—', 
-   color:'#e74c3c'},
-
-  {id:'end-ride', lat:-13.7434, lng:-172.2186, name:'Salelologa — End of Ride', type:'activity', day:'Day 5', num:'🏁',
-   date:'Fri 9 Oct ~12:30pm', dist:'13km from waterfall', elev:'—',
-   details:'Easy flat ride to Salelologa. Last stop at Salelologa Market for souvenirs & snacks. Spend your remaining Tala!',
-   accom:'—', 
-   color:'#e67e22'},
-
-  {id:'lusias', lat:-13.7480, lng:-172.2250, name:'Lusia\'s Lagoon Chalets (Night 6)', type:'overnight', day:'Night 6', num:'6',
-   date:'Fri 9 Oct', dist:'—', elev:'—',
-   details:'Overwater and garden chalets near Salelologa Wharf. Relaxed evening after final ride. No rush tomorrow — 8am ferry.',
-   accom:'Lusia\'s Lagoon Chalets ~AUD$80-120/room', 
-   color:'#27ae60'},
-
-  // === RETURN (Sat 10 Oct) ===
-  {id:'return-ferry', lat:-13.8301, lng:-172.0360, name:'Ferry — Savai\'i → Upolu', type:'activity', day:'Return Day', num:'⛴️',
-   date:'Sat 10 Oct 8:00am', dist:'—', elev:'—',
-   details:'Catch the 8am ferry from Salelologa Wharf. ~90 min crossing. Relaxed morning. Arrive Mulifanua ~9:30am. Ride to Outdoor Samoa depot. Return bikes.',
-   accom:'—', 
-   color:'#e67e22'},
-
-  {id:'salty-night7', lat:-13.8474, lng:-172.0514, name:'Salty Lodge (Night 7)', type:'overnight', day:'Night 7', num:'7',
-   date:'Sat 10 Oct', dist:'~5km from airport', elev:'—',
-   details:'Drop bikes at Outdoor Samoa. Walk to Salty Lodge. Shower. Rest. 9:15am flight tomorrow.',
-   accom:'Salty Lodge ~AUD$100/room', 
-   color:'#27ae60'},
-
-  // === FLY HOME (Sun 11 Oct) ===
-  {id:'fly-home', lat:-13.8311, lng:-172.0078, name:'Fly Home', type:'activity', day:'Departure', num:'✈️',
-   date:'Sun 11 Oct', dist:'—', elev:'—',
-   details:'Wake 7am. Taxi to Faleolo Airport (5 min). 9:15am Virgin Australia to Brisbane. Connect to Canberra. Home by ~5:50pm AEDT. Trip complete! 🌴',
-   accom:'—', 
-   color:'#e74c3c'}
-];
+// Stops & activities come from trip-data.js
+const stops = TRIP.stops;
+const dayInfo = Object.fromEntries(TRIP.days.map(d => [d.key, d]));
+const COLORS = {base:'#27ae60', stay:'#2e86c1', transport:'#7f8c8d', must:'#e74c3c', sight:'#e67e22', swim:'#1abc9c', cave:'#9b59b6'};
 
 // Route line (approximate counterclockwise path)
 const routeCoords = [
@@ -933,7 +800,7 @@ var returnLine = curvedLine(saleLat, saleLng, wharfLat, wharfLng, -0.03);
 L.polyline(returnLine, {color: '#e74c3c', weight: 3, opacity: 0.7, dashArray: '8 6'}).addTo(map);
 
 // Mulifanua area connecting line (airport → motel → wharf) - single orange line
-L.polyline([[-13.8311, -172.0078], [-13.8474, -172.0514], [-13.8301, -172.0360]], {color: '#e67e22', weight: 2, opacity: 0.7, dashArray: '4 4'}).addTo(map);
+L.polyline([[-13.8311, -172.0078], [-13.8263, -172.0287], [-13.8475, -172.0515], [-13.8300, -172.0365]], {color: '#7f8c8d', weight: 2, opacity: 0.7, dashArray: '4 4'}).addTo(map);
 
 // Direction arrows on ferry curves
 function addArrowAt(lat, lng, bearing, color) {
@@ -951,59 +818,75 @@ addArrowAt(returnLine[10][0], returnLine[10][1], 130, '#e74c3c');
 
 // Add markers
 const markers = {};
+function gmaps(s) { return 'https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng; }
+function infoHtml(s) {
+  let h = '';
+  if (s.when) h += '<div class="when">📍 ' + s.when + '</div>';
+  const bits = [s.time && '⏱ ' + s.time, s.cost && '💵 ' + s.cost].filter(Boolean);
+  if (bits.length) h += '<div class="meta">' + bits.map(b => '<span>' + b + '</span>').join('') + '</div>';
+  h += '<div class="details">' + s.details + '</div>';
+  if (s.warn) h += '<div class="warn">⚠️ ' + s.warn + '</div>';
+  if (s.phone) h += '<div class="accom">📞 ' + s.phone + '</div>';
+  h += '<div class="links"><a href="' + gmaps(s) + '" target="_blank" rel="noopener">Google Maps' + (s.approx ? ' (approx. location)' : '') + '</a>';
+  if (dayInfo[s.day] && dayInfo[s.day].ride) h += ' • <a href="activities.html#' + s.day + '">' + dayInfo[s.day].date + ' activities</a>';
+  return h + '</div>';
+}
 stops.forEach(s => {
-  let mk;
-  if (s.type === 'overnight') {
-    mk = L.marker([s.lat, s.lng], {icon: numIcon(s.num, s.color)});
-  } else if (s.type === 'highlight') {
-    mk = L.marker([s.lat, s.lng], {icon: icon(s.color, 18)});
-  } else {
-    mk = L.marker([s.lat, s.lng], {icon: icon(s.color, 14)});
-  }
-
-  let popup = '<div style="max-width:280px;font-family:sans-serif;">';
-  popup += '<h3 style="margin:0 0 6px;color:#1a5276;font-size:15px;">' + s.name + '</h3>';
-  if (s.dist !== '—') popup += '<div style="font-size:12px;color:#666;margin-bottom:4px;">📏 ' + s.dist + (s.elev !== '—' ? ' &bull; ⛰️ ' + s.elev : '') + '</div>';
-  popup += '<div style="font-size:13px;margin-bottom:6px;">' + s.details + '</div>';
-  if (s.accom && s.accom !== '—') popup += '<div style="font-size:12px;background:#e8f8f5;padding:6px 8px;border-radius:4px;margin-bottom:4px;">🏠 ' + s.accom + '</div>';
-  popup += '</div>';
-
-  mk.bindPopup(popup, {maxWidth: 300});
+  const color = COLORS[s.cat] || '#e67e22';
+  const mk = s.num
+    ? L.marker([s.lat, s.lng], {icon: numIcon(s.num, color)})
+    : L.marker([s.lat, s.lng], {icon: icon(color, s.cat === 'must' ? 18 : 14)});
+  mk.bindPopup('<div class="popup"><h3>' + s.name + '</h3>' + infoHtml(s) + '</div>', {maxWidth: 300});
   mk.addTo(map);
   markers[s.id] = mk;
 });
 
-// Sidebar cards
+// Sidebar cards, grouped by day
 const sidebar = document.getElementById('sidebar');
-stops.forEach(s => {
-  const card = document.createElement('div');
-  const isArrival = s.id.startsWith('salty-');
-  const isDepart = s.id === 'fly-home';
-  card.className = 'stop-card' + (isArrival ? ' arrival' : '') + (isDepart ? ' depart' : '');
-  card.innerHTML = `
-    <h3>${s.num} ${s.name}</h3>
-    <div class="meta">
-      <span>${s.day}</span>
-      <span>${s.date}</span>
-      ${s.dist !== '—' ? '<span>📏 ' + s.dist + '</span>' : ''}
-      ${s.elev !== '—' ? '<span class="' + (s.elev.includes('⚠') ? 'warn' : '') + '">⛰️ ' + s.elev + '</span>' : ''}
-    </div>
-    <div class="details">${s.details}</div>
-    ${s.accom && s.accom !== '—' ? '<div class="accom">🏠 ' + s.accom + '</div>' : ''}
-    
-  `;
-  card.addEventListener('click', () => {
-    map.setView([s.lat, s.lng], 13);
-    markers[s.id].openPopup();
-    document.querySelectorAll('.stop-card').forEach(c => c.classList.remove('active'));
-    card.classList.add('active');
+const cards = {};
+TRIP.days.forEach(d => {
+  const items = stops.filter(s => s.day === d.key);
+  const head = document.createElement('div');
+  head.className = 'day-head';
+  head.id = 'day-' + d.key;
+  head.innerHTML = '<b>' + d.date + ' — ' + d.title + '</b>' + (d.km ? ' <span>' + d.km + ' • ⛰️ ' + d.elev + '</span>' : '') + '<div>' + d.summary + '</div>';
+  sidebar.appendChild(head);
+  items.forEach(s => {
+    const card = document.createElement('div');
+    card.className = 'stop-card cat-' + s.cat;
+    card.style.borderLeftColor = COLORS[s.cat];
+    card.innerHTML = '<h3>' + (s.num ? s.num + ' ' : '') + s.name + '</h3>' + infoHtml(s);
+    card.addEventListener('click', ev => { if (ev.target.tagName !== 'A') focusStop(s.id, false); });
+    sidebar.appendChild(card);
+    cards[s.id] = card;
   });
-  sidebar.appendChild(card);
 });
 
-// Fit map to show everything
-map.fitBounds(L.latLngBounds(stops.map(s => [s.lat, s.lng])).pad(0.1));
+function focusStop(id, scroll) {
+  const s = stops.find(x => x.id === id);
+  if (!s) return false;
+  map.setView([s.lat, s.lng], 14);
+  markers[id].openPopup();
+  Object.values(cards).forEach(c => c.classList.remove('active'));
+  cards[id].classList.add('active');
+  if (scroll) cards[id].scrollIntoView({block: 'start'});
+  return true;
+}
+function fromHash() {
+  const id = decodeURIComponent(location.hash.slice(1));
+  if (focusStop(id, true)) return;
+  const head = document.getElementById('day-' + id);
+  if (head) {
+    const pts = stops.filter(s => s.day === id).map(s => [s.lat, s.lng]);
+    if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.2));
+    head.scrollIntoView({block: 'start'});
+  }
+}
 
+// Fit map to show everything, then honour #stop-id / #day links
+map.fitBounds(L.latLngBounds(stops.map(s => [s.lat, s.lng])).pad(0.1));
+window.addEventListener('hashchange', fromHash);
+if (location.hash) fromHash();
 
 </script>
 <script src="download.js" defer></script>

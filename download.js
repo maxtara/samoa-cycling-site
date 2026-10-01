@@ -19,7 +19,16 @@
       var assets = html.indexOf(LEAFLET_JS) === -1
         ? Promise.resolve(null)
         : Promise.all([fetchText(LEAFLET_CSS), fetchText(LEAFLET_JS)]);
-      return assets.then(function (leaflet) {
+      // Inline local scripts (e.g. trip-data.js) so the saved copy works on its own.
+      var localRe = /<script src="(?!download\.js)([^":]+\.js)"><\/script>/g;
+      var locals = (html.match(localRe) || []).map(function (tag) {
+        var src = tag.replace(localRe, '$1');
+        localRe.lastIndex = 0;
+        return fetchText(new URL(src, location.href).href).then(function (js) {
+          html = html.replace(tag, function () { return '<script>' + js.replace(/<\/script/gi, '<\\/script') + SCRIPT_END; });
+        });
+      });
+      return Promise.all(locals).then(function () { return assets; }).then(function (leaflet) {
         if (leaflet) {
           html = html.replace(/<link[^>]+leaflet\.css[^>]*>/, function () {
             return '<style>' + leaflet[0] + '</style>';
