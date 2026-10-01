@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title> Accommodation Comparison — Samoa Cycling Trip</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; color: #1a1a2e; line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+  h1 { color: #fff; background: linear-gradient(135deg, #1a5276, #2e86c1); padding: 30px; border-radius: 12px; margin-bottom: 24px; font-size: 28px; }
+  h1 small { display: block; font-weight: 400; font-size: 16px; opacity: 0.85; margin-top: 8px; }
+  h2 { color: #1a5276; border-bottom: 3px solid #2e86c1; padding-bottom: 8px; margin: 32px 0 16px; font-size: 22px; }
+  h3 { color: #2e86c1; margin: 20px 0 10px; font-size: 18px; }
+  h4 { color: #1a5276; margin: 14px 0 6px; }
+
+  /* Summary table */
+  table { border-collapse: collapse; width: 100%; margin: 16px 0; font-size: 14px; }
+  th, td { border: 1px solid #ddd; padding: 10px 12px; text-align: left; }
+  th { background: #2e86c1; color: white; }
+  tr:nth-child(even) { background: #f8f9fa; }
+  .summary-card { background: #fff; border-radius: 12px; padding: 24px; margin: 20px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+  /* Stop cards */
+  .stop-section { margin: 32px 0; }
+  .stop-header { background: linear-gradient(135deg, #1a5276, #2471a3); color: #fff; padding: 18px 24px; border-radius: 12px 12px 0 0; }
+  .stop-header h2 { color: #fff; border-bottom: none; margin: 0; padding: 0; font-size: 20px; }
+  .stop-header .stop-date { font-size: 14px; opacity: 0.85; margin-top: 4px; }
+  .hotel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; padding: 20px; background: #fff; border-radius: 0 0 12px 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+
+  /* Hotel cards */
+  .hotel-card { border-radius: 10px; padding: 20px; border: 2px solid #e0e0e0; background: #fafbfc; display: flex; flex-direction: column; transition: box-shadow 0.2s; }
+  .hotel-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+  .hotel-card.recommended { border-color: #27ae60; background: #f0faf4; }
+  .hotel-card.upgrade { border-color: #f39c12; background: #fffcf0; }
+  .hotel-card.budget { border-color: #3498db; background: #f0f7fd; }
+  .hotel-card.warning { border-color: #e67e22; background: #fef5ec; }
+
+  .hotel-name { font-size: 17px; font-weight: 700; color: #1a5276; margin-bottom: 4px; }
+  .hotel-stars { color: #f39c12; font-size: 14px; margin-bottom: 8px; }
+  .hotel-price { font-size: 22px; font-weight: 700; color: #2e86c1; margin: 8px 0; }
+  .hotel-price small { font-size: 13px; font-weight: 400; color: #666; }
+  .hotel-desc { font-size: 14px; color: #444; margin: 8px 0; flex: 1; }
+  .hotel-meals { background: #fef9e7; border-radius: 6px; padding: 8px 12px; margin: 8px 0; font-size: 13px; }
+  .hotel-meals strong { color: #b7950b; }
+  .hotel-review { font-style: italic; color: #555; font-size: 13px; margin: 8px 0; padding: 8px 12px; background: #f5f5f5; border-radius: 6px; border-left: 3px solid #ccc; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; margin: 6px 4px 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+  .badge.rec { background: #27ae60; color: #fff; }
+  .badge.upgrade { background: #f39c12; color: #fff; }
+  .badge.cheap { background: #3498db; color: #fff; }
+  .badge.warn { background: #e67e22; color: #fff; }
+  .badge.alt { background: #7f8c8d; color: #fff; }
+
+  .book-link { display: inline-block; margin-top: 10px; padding: 8px 16px; background: #2e86c1; color: #fff; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600; transition: background 0.2s; }
+  .book-link:hover { background: #1a5276; }
+  .book-link.contact { background: #7f8c8d; }
+  .book-link.contact:hover { background: #5d6d7e; }
+
+  .tip { background: #eafaf1; border-left: 4px solid #27ae60; padding: 12px 16px; border-radius: 4px; margin: 12px 0; font-size: 14px; }
+  .alert { background: #fdedec; border-left: 4px solid #e74c3c; padding: 12px 16px; border-radius: 4px; margin: 12px 0; font-size: 14px; }
+  .note-card { background: #fff; border-radius: 12px; padding: 24px; margin: 24px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 5px solid #f39c12; }
+
+  ul { margin: 8px 0 8px 20px; }
+  li { margin: 4px 0; }
+
+  @media (max-width: 768px) {
+    .hotel-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 22px; padding: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>
+  &#127968;  Accommodation Comparison
+  <small>3 hotel options per stop &bull; Savai'i cycling trip &bull; Oct 2026 &bull; Prices in AUD per person per night unless noted</small>
+</h1>
+
+<!-- ============================================================ -->
+<!-- SUMMARY TABLE                                                 -->
+<!-- ============================================================ -->
+<div class="summary-card">
+<h2>&#128202; Quick Comparison Summary</h2>
+<table>
+  <tr>
+    <th>Stop</th>
+    <th>Night</th>
+    <th>&#9989; Recommended</th>
+    <th>Price (pp)</th>
+    <th>Alternative 1</th>
+    <th>Alternative 2</th>
+  </tr>
+  <tr>
+    <td><strong>0+1 &amp; 7: Mulifanua</strong></td>
+    <td>Sat 3 Oct / Sun 4 Oct / Sat 10 Oct</td>
+    <td>Salty Lodge</td>
+    <td>~$100/room</td>
+    <td>Airport Lodge ($60&ndash;80/room)</td>
+    <td>Sheraton Aggie Grey's ($150&ndash;250/room)</td>
+  </tr>
+  <tr>
+    <td><strong>2: Manase</strong></td>
+    <td>Mon 5 Oct</td>
+    <td>Tailua Beach Fales</td>
+    <td>~$41 pp</td>
+    <td>Jane's Beach Fales ($32&ndash;41 pp)</td>
+    <td>Stevensons at Manase ($65&ndash;130 pp)</td>
+  </tr>
+  <tr>
+    <td><strong>3: Asau Bay</strong></td>
+    <td>Tue 6 Oct</td>
+    <td>Va-i-Moana Seaside Lodge</td>
+    <td>~$35&ndash;47 pp</td>
+    <td>Vaisala Hotel ($35&ndash;50 pp)</td>
+    <td>Savaii Lagoon Resort ($55&ndash;80 pp)</td>
+  </tr>
+  <tr>
+    <td><strong>4: Falealupo</strong></td>
+    <td>Wed 7 Oct</td>
+    <td>Falealupo Beach Fales</td>
+    <td>~$41 pp</td>
+    <td>Se'eti Beach Fales ($35&ndash;41 pp)</td>
+    <td>Vaisala Hotel ($35&ndash;50 pp)</td>
+  </tr>
+  <tr>
+    <td><strong>5: Satuiatua</strong></td>
+    <td>Thu 8 Oct</td>
+    <td>Satuiatua Beach Resort</td>
+    <td>~$44 pp</td>
+    <td>Aganoa Lodge ($200+ pp)</td>
+    <td>Bayview Resort ($35&ndash;50 pp)</td>
+  </tr>
+  <tr>
+    <td><strong>6: Salelologa</strong></td>
+    <td>Fri 9 Oct</td>
+    <td>Lusia's Lagoon Chalets</td>
+    <td>~$80&ndash;120/room</td>
+    <td>Jet Over Hotel ($50&ndash;70/room)</td>
+    <td>Savai'ian Hotel ($60&ndash;90/room)</td>
+  </tr>
+</table>
+<div class="tip">&#128161; <strong>Budget pick (all recommended options):</strong> ~AUD $350&ndash;400 pp for 8 nights accommodation (3 nights Salty Lodge + 4 nights beach fales with meals included + 1 night Lusia's Lagoon). Outstanding value for a full week in Samoa.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- NIGHT 0+1: MULIFANUA (SALTY LODGE) &bull; NIGHT 7: MULIFANUA (SALTY LODGE)     -->
+<!-- ============================================================ -->
+<div class="stop-section">
+  <div class="stop-header">
+    <h2>&#128747; Night 0+1: Mulifanua (Salty Lodge) &bull; Night 7: Mulifanua (Salty Lodge)</h2>
+    <div class="stop-date">Night 0: Sat 3 Oct &bull; Night 1: Sun 4 Oct &bull; Night 7: Sat 10 Oct &bull; Near airport &amp; ferry wharf</div>
+  </div>
+  <div class="hotel-grid">
+
+    <!-- Salty Lodge -->
+    <div class="hotel-card recommended">
+      <div class="hotel-name">Salty Lodge</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9734;&#9734;</div>
+      <span class="badge rec">&#9989; Recommended</span>
+      <div class="hotel-price">~$100 <small>/room/night (not per person)</small></div>
+      <div class="hotel-desc">Right next to the Outdoor Samoa bike depot, ~2km from Faleolo Airport and near Mulifanua ferry wharf. Ideal base for arrival, rest day, and departure nights.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> None included</div>
+      <div class="hotel-review">&ldquo;Perfect location right next to the bike depot. Convenient for airport and ferry.&rdquo;</div>
+      <a href="#" class="book-link contact">Contact directly for booking</a>
+    </div>
+
+    <!-- Airport Lodge -->
+    <div class="hotel-card budget">
+      <div class="hotel-name">Airport Lodge</div>
+      <div class="hotel-stars">Budget</div>
+      <span class="badge alt">Alternative</span>
+      <div class="hotel-price">~$60&ndash;80 <small>/room</small></div>
+      <div class="hotel-desc">Near the Outdoor Samoa depot (~3km past Mulifanua Wharf). Simple rooms, handy if picking up/dropping off bikes.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Breakfast sometimes available</div>
+      <div class="hotel-review">&ldquo;Close to bike depot, simple rooms.&rdquo;</div>
+      <a href="#" class="book-link contact">Contact Outdoor Samoa for info</a>
+    </div>
+
+    <!-- Sheraton Aggie Grey's -->
+    <div class="hotel-card upgrade">
+      <div class="hotel-name">Sheraton Aggie Grey's Hotel, Apia</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+      <span class="badge upgrade">&#127775; Luxury</span>
+      <span class="badge warn">&#9888; Far from ferry</span>
+      <div class="hotel-price">~$150&ndash;250 <small>/room</small></div>
+      <div class="hotel-desc">In Apia (38km from airport/ferry). Luxury resort option if you want a treat night before or after the ride. Pool, restaurants, colonial-era charm.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Restaurant on site</div>
+      <div class="hotel-review">&ldquo;Beautiful resort but 40min taxi to ferry/airport. Only if you have spare time in Apia.&rdquo;</div>
+      <a href="https://www.booking.com/hotel/ws/sheraton-samoa-aggie-grey-s-resort.html" class="book-link" target="_blank">Book on Booking.com &rarr;</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STOP 2: MANASE                                                -->
+<!-- ============================================================ -->
+<div class="stop-section">
+  <div class="stop-header">
+    <h2>&#127958; Stop 2: Manase</h2>
+    <div class="stop-date">Night 2 &mdash; Mon 5 Oct &bull; North coast Savai'i</div>
+  </div>
+  <div class="hotel-grid">
+
+    <!-- Tailua Beach Fales -->
+    <div class="hotel-card recommended">
+      <div class="hotel-name">Tailua Beach Fales</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9733;&#9734; <small>(traveller reviews)</small></div>
+      <span class="badge rec">&#9989; Recommended</span>
+      <span class="badge cheap">Best value + location</span>
+      <div class="hotel-price">~$41 <small>pp/night</small></div>
+      <div class="hotel-desc">Beach fales with raised beds and private deck right on the sand. Turtles come to feed outside! Simple but charming and family-friendly.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Dinner + breakfast INCLUDED (Samoan home-style cooking)</div>
+      <div class="hotel-review">&ldquo;Best beach access in Manase. Turtles come to feed right outside! Simple but charming. Family-friendly.&rdquo;</div>
+      <a href="https://www.expedia.co.nz/go/hotel/info/12224480" class="book-link" target="_blank">Book on Expedia &rarr;</a>
+    </div>
+
+    <!-- Jane's Beach Fales -->
+    <div class="hotel-card budget">
+      <div class="hotel-name">Jane's Beach Fales</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#189;&#9734;</div>
+      <span class="badge cheap">&#128176; Cheapest option</span>
+      <div class="hotel-price">~$32&ndash;41 <small>pp/night (negotiable!)</small></div>
+      <div class="hotel-desc">Enclosed colourful fales with private decks. Nicest beach position along Manase. Prices negotiable on arrival. Low ceilings if you're tall.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Dinner + breakfast available for extra fee</div>
+      <div class="hotel-review">&ldquo;Most rustic of the Manase options but arguably the best beach. Prices negotiable. Low ceilings if you're tall.&rdquo;</div>
+      <a href="#" class="book-link contact">Contact directly &mdash; no online booking</a>
+    </div>
+
+    <!-- Stevensons at Manase -->
+    <div class="hotel-card upgrade">
+      <div class="hotel-name">Stevensons at Manase</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9733;&#189;</div>
+      <span class="badge upgrade">&#127775; Upgrade option</span>
+      <div class="hotel-price">~$65&ndash;130 <small>pp/night (eurofales from $65, villas from $100)</small></div>
+      <div class="hotel-desc">&ldquo;Eurofales&rdquo; with ensuite bathrooms, private deck, lagoon views. Swimming pool + beach bar. Pool day-use SAT$20 even if not staying.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Breakfast included. Restaurant on site (fish &amp; chips, seafood, cocktails).</div>
+      <div class="hotel-review">&ldquo;The comfort upgrade. Pool is great after a hot ride. Beach bar sunsets are magic. Pool day-use SAT$20 even if not staying.&rdquo;</div>
+      <a href="https://www.booking.com/hotel/ws/stevensons-at-manase.en.html" class="book-link" target="_blank">Book on Booking.com &rarr;</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STOP 3: ASAU BAY                                              -->
+<!-- ============================================================ -->
+<div class="stop-section">
+  <div class="stop-header">
+    <h2>&#127796; Stop 3: Asau Bay</h2>
+    <div class="stop-date">Night 3 &mdash; Tue 6 Oct &bull; Northwest Savai'i</div>
+  </div>
+  <div class="hotel-grid">
+
+    <!-- Va-i-Moana -->
+    <div class="hotel-card recommended">
+      <div class="hotel-name">Va-i-Moana Seaside Lodge</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+      <span class="badge rec">&#9989; Recommended</span>
+      <div class="hotel-price">~$35&ndash;47 <small>pp/night</small></div>
+      <div class="hotel-desc">Family units, beachfront units, traditional fales. Restaurant, cultural activities, koko plantation tour. The only real dining option in the area &mdash; and it's great.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Dinner + breakfast INCLUDED</div>
+      <div class="hotel-review">&ldquo;Wonderful Samoan hospitality. Great restaurant (sizzling steak, lobster mornay). Koko plantation tour is fascinating. Only dining option in the area.&rdquo;</div>
+      <a href="https://www.expedia.co.nz/go/hotel/info/8001653" class="book-link" target="_blank">Book on Expedia &rarr;</a>
+    </div>
+
+    <!-- Vaisala Hotel -->
+    <div class="hotel-card budget">
+      <div class="hotel-name">Vaisala Hotel</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9734;&#9734;</div>
+      <span class="badge alt">Alternative if Va-i-Moana full</span>
+      <div class="hotel-price">~$35&ndash;50 <small>pp/night</small></div>
+      <div class="hotel-desc">Budget hotel on Vaisala Beach, about 6km before Asau. Nice beach, simple rooms.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Breakfast available, restaurant for dinner</div>
+      <div class="hotel-review">&ldquo;Simple budget hotel. Nice beach. Good if Va-i-Moana is full.&rdquo;</div>
+      <a href="#" class="book-link contact">Contact directly</a>
+    </div>
+
+    <!-- Savaii Lagoon Resort -->
+    <div class="hotel-card warning">
+      <div class="hotel-name">Savaii Lagoon Resort (Fagamalo)</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9733;&#189;</div>
+      <span class="badge upgrade">&#127775; Comfort option</span>
+      <span class="badge warn">&#9888; Different route</span>
+      <div class="hotel-price">~$55&ndash;80 <small>pp/night</small></div>
+      <div class="hotel-desc">Back in Fagamalo (38km ride cut short by ~34km). Modern bungalows, beach, pool area, Dive Savai'i across the road. Means only a 6km ride today instead of 38km.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Breakfast included. Barefoot Bar restaurant.</div>
+      <div class="hotel-review">&ldquo;Best fia fia night in Samoa. Run by lovely Kiwi-Samoan couple. But means only a 6km ride today instead of 38km — use this option if you want a rest day at Fagamalo instead.&rdquo;</div>
+      <a href="https://www.booking.com/hotel/ws/savaii-lagoon-resort.en.html" class="book-link" target="_blank">Book on Booking.com &rarr;</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STOP 4: FALEALUPO                                             -->
+<!-- ============================================================ -->
+<div class="stop-section">
+  <div class="stop-header">
+    <h2>&#127774; Stop 4: Falealupo</h2>
+    <div class="stop-date">Night 4 &mdash; Wed 7 Oct &bull; Western tip of Savai'i</div>
+  </div>
+  <div class="hotel-grid">
+
+    <!-- Falealupo Beach Fales -->
+    <div class="hotel-card recommended">
+      <div class="hotel-name">Falealupo Beach Fales</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+      <span class="badge rec">&#9989; Recommended</span>
+      <div class="hotel-price">~$41 <small>pp/night</small></div>
+      <div class="hotel-desc">Simple open-air fales on Savai'i's best white sand beach. Mosquito nets, mattress. Only 5 fales &mdash; book ahead! Snorkelling right off shore.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Dinner (buffet) + breakfast INCLUDED</div>
+      <div class="hotel-review">&ldquo;Isolated paradise. The beach is stunning. Snorkelling right off shore. Eating dinner under the stars on the sand is unforgettable. BOOK AHEAD — only 5 fales and they fill up!&rdquo;</div>
+      <div class="alert">&#9888; <strong>Only 5 fales!</strong> Phone ahead to book (+685 numbers). No online booking available.</div>
+      <a href="#" class="book-link contact">Phone to book &mdash; no online booking</a>
+    </div>
+
+    <!-- Se'eti Beach Fales -->
+    <div class="hotel-card budget">
+      <div class="hotel-name">Se'eti Beach Fales</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#189;&#9734;</div>
+      <span class="badge alt">Good alternative to Option 1</span>
+      <div class="hotel-price">~$35&ndash;41 <small>pp/night</small></div>
+      <div class="hotel-desc">Same Falealupo Beach, spacious fales with woven walls. Family-run, vibrant atmosphere. Good backup if Falealupo Beach Fales is full.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Dinner + breakfast included</div>
+      <div class="hotel-review">&ldquo;Slightly more spacious than Falealupo Beach Fales. Same incredible beach. Vibrant family atmosphere. Good backup if Falealupo Fales is full.&rdquo;</div>
+      <a href="#" class="book-link contact">Contact directly</a>
+    </div>
+
+    <!-- Falealupo Beach Fales backup -->
+    <div class="hotel-card budget">
+      <div class="hotel-name">Vaisala Hotel</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9734;&#9734;</div>
+      <span class="badge alt">&#128176; Budget backup</span>
+      <div class="hotel-price">~$35&ndash;50 <small>pp/night</small></div>
+      <div class="hotel-desc">Budget hotel on Vaisala Beach, about 13km before Falealupo (between Asau and Falealupo). Nice beach, simple rooms with AC available. Good if Falealupo fales are full.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Breakfast available, restaurant for dinner</div>
+      <div class="hotel-review">&ldquo;Simple budget hotel. Nice beach. Not as magical as Falealupo but a solid backup if the 5 fales are full.&rdquo;</div>
+      <a href="#" class="book-link contact">Contact directly</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STOP 5: SATUIATUA                                             -->
+<!-- ============================================================ -->
+<div class="stop-section">
+  <div class="stop-header">
+    <h2>&#127754; Stop 5: Satuiatua</h2>
+    <div class="stop-date">Night 5 &mdash; Thu 8 Oct &bull; South coast Savai'i</div>
+  </div>
+  <div class="hotel-grid">
+
+    <!-- Satuiatua Beach Resort -->
+    <div class="hotel-card recommended">
+      <div class="hotel-name">Satuiatua Beach Resort</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+      <span class="badge rec">&#9989; Recommended</span>
+      <div class="hotel-price">~$44 <small>pp/night</small></div>
+      <div class="hotel-desc">Traditional open fales with woven blinds on the south coast sunset beach. Banyan tree deck. Best snorkelling in all of Samoa right off the beach &mdash; swim out 30&ndash;50m for spectacular coral.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Dinner + breakfast buffet INCLUDED</div>
+      <div class="hotel-review">&ldquo;Best snorkelling in all of Samoa right off the beach. Swim out 30-50m to the channel for spectacular coral and fish. Restaurant is popular with locals too. Simple fales but the location is magic.&rdquo;</div>
+      <a href="#" class="book-link contact">Contact directly or check Booking.com</a>
+    </div>
+
+    <!-- Aganoa Lodge -->
+    <div class="hotel-card upgrade">
+      <div class="hotel-name">Aganoa Lodge</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+      <span class="badge upgrade">&#127775; Splurge option</span>
+      <div class="hotel-price">~$200+ <small>pp/night (all-inclusive)</small></div>
+      <div class="hotel-desc">Upscale surf lodge with private-deck fales, ensuite rockwall showers. Surfing, kayaking, yoga. About 15km past Satuiatua on the south coast. Once-in-a-lifetime.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> ALL meals included</div>
+      <div class="hotel-review">&ldquo;Luxury eco-lodge. Stunning private fales right on the sand. All-inclusive. Surfing, kayaking, yoga. Pricey but once-in-a-lifetime. About 15km past Satuiatua on the south coast.&rdquo;</div>
+      <div class="tip">&#128692; Adds ~15km to the day's ride</div>
+      <a href="https://www.expedia.co.nz/go/hotel/info/11505325" class="book-link" target="_blank">Book on Expedia &rarr;</a>
+    </div>
+
+    <!-- Bayview Resort -->
+    <div class="hotel-card budget">
+      <div class="hotel-name">Bayview Resort</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9734;&#9734;</div>
+      <span class="badge alt">&#128176; Budget alternative</span>
+      <div class="hotel-price">~$35&ndash;50 <small>pp/night</small></div>
+      <div class="hotel-desc">Rustic units among the Saleaula lava fields on the north coast. Turtle-filled rock pools nearby. Restaurant/bar open 24/7. About 20km before Satuiatua (shorter ride day).</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Restaurant on site (24/7)</div>
+      <div class="hotel-review">&ldquo;Unique setting among lava formations. Turtles visit the rock pools. Rough access road but short. Would mean a shorter Day 4 ride.&rdquo;</div>
+      <a href="https://www.expedia.co.nz/go/hotel/info/6895210" class="book-link" target="_blank">Book on Expedia &rarr;</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STOP 6: SALELOLOGA                                            -->
+<!-- ============================================================ -->
+<div class="stop-section">
+  <div class="stop-header">
+    <h2>&#9875; Stop 6: Salelologa</h2>
+    <div class="stop-date">Night 6 &mdash; Fri 9 Oct &bull; Near Salelologa Wharf, Savai'i</div>
+  </div>
+  <div class="hotel-grid">
+
+    <!-- Lusia's Lagoon Chalets -->
+    <div class="hotel-card recommended">
+      <div class="hotel-name">Lusia's Lagoon Chalets</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</div>
+      <span class="badge rec">&#9989; Recommended</span>
+      <div class="hotel-price">~$80&ndash;120 <small>/room/night</small></div>
+      <div class="hotel-desc">Overwater and garden chalets near Salelologa Wharf. Popular with cyclists and travellers catching the morning ferry. Restaurant on site, lovely lagoon setting.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Breakfast available, restaurant on site</div>
+      <div class="hotel-review">&ldquo;Beautiful overwater chalets right on the lagoon. Great spot for the last night before the ferry back to Upolu.&rdquo;</div>
+      <a href="https://www.booking.com/hotel/ws/lusia-s-lagoon-chalets.html" class="book-link" target="_blank">Book on Booking.com &rarr;</a>
+    </div>
+
+    <!-- Jet Over Hotel -->
+    <div class="hotel-card budget">
+      <div class="hotel-name">Jet Over Hotel</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9734;&#9734;</div>
+      <span class="badge alt">Alternative</span>
+      <div class="hotel-price">~$50&ndash;70 <small>/room/night</small></div>
+      <div class="hotel-desc">Budget hotel near Salelologa Wharf. Simple rooms with AC. Walking distance to wharf and local shops.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Breakfast available</div>
+      <div class="hotel-review">&ldquo;Basic but clean. Very close to the wharf for an early ferry departure.&rdquo;</div>
+      <a href="#" class="book-link contact">Contact directly</a>
+    </div>
+
+    <!-- Savai'ian Hotel -->
+    <div class="hotel-card budget">
+      <div class="hotel-name">Savai'ian Hotel</div>
+      <div class="hotel-stars">&#9733;&#9733;&#9733;&#9734;&#9734;</div>
+      <span class="badge alt">Alternative</span>
+      <div class="hotel-price">~$60&ndash;90 <small>/room/night</small></div>
+      <div class="hotel-desc">Established hotel in Salelologa with restaurant and bar. Comfortable rooms, convenient location near the wharf and market.</div>
+      <div class="hotel-meals"><strong>&#127860; Meals:</strong> Restaurant and bar on site</div>
+      <div class="hotel-review">&ldquo;Solid mid-range option. Good restaurant. Close to everything in Salelologa.&rdquo;</div>
+      <a href="#" class="book-link contact">Contact directly</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- FOOTER NOTE                                                   -->
+<!-- ============================================================ -->
+<div class="note-card">
+  <h3>&#128221; Important Notes</h3>
+  <p style="margin-top: 10px; font-size: 14px; color: #555;">Prices are estimates based on 2025/2026 travel blog data and booking sites. Confirm directly with accommodation before booking. Beach fale prices are often negotiable on arrival, especially in quieter periods.</p>
+  <ul style="margin-top: 12px; font-size: 14px; color: #555;">
+    <li><strong>Beach fales</strong> are traditional Samoan open-sided shelters &mdash; expect mattresses, mosquito nets, and ocean breezes rather than air conditioning and minibars.</li>
+    <li><strong>Meals included</strong> is a huge perk &mdash; there are very few restaurants in rural Savai'i, so your accommodation is often your only dining option.</li>
+    <li><strong>Booking ahead</strong> is essential for Falealupo (only 5 fales) and advisable everywhere in peak season.</li>
+    <li>All prices shown in <strong>AUD</strong>. Exchange rate fluctuations may affect final prices.</li>
+  </ul>
+</div>
+
+</div>
+<script src="download.js" defer></script>
+</body>
+</html>

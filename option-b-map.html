@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Samoa — 5-Day Cycling Adventure</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; background: #f0f4f8; overflow: hidden; height: 100vh; }
+
+  /* Burger button */
+  .burger { position: fixed; top: 12px; left: 12px; z-index: 2000; width: 44px; height: 44px; border-radius: 10px;
+    background: rgba(26,82,118,0.92); border: none; cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); backdrop-filter: blur(4px); }
+  .leaflet-top.leaflet-left { left: 56px; }
+  .burger span { display: block; width: 22px; height: 2px; background: white; border-radius: 2px; transition: 0.2s; }
+  .burger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+  .burger.open span:nth-child(2) { opacity: 0; }
+  .burger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -5px); }
+
+  /* Title pill */
+
+  /* Side menu */
+  .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4);
+    z-index: 1800; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+  .menu-overlay.open { opacity: 1; pointer-events: auto; }
+  .side-menu { position: fixed; top: 0; left: -320px; width: 300px; max-width: 85vw; height: 100%;
+    background: #1a5276; color: white; z-index: 1900; transition: left 0.3s ease; overflow-y: auto;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3); }
+  .side-menu.open { left: 0; }
+  .side-menu h2 { padding: 24px 20px 8px; font-size: 18px; border-bottom: 1px solid rgba(255,255,255,0.15); margin-bottom: 8px; }
+  .side-menu .menu-section { padding: 12px 20px; }
+  .side-menu .menu-section h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; margin-bottom: 8px; }
+  .side-menu a { display: block; color: #aed6f1; text-decoration: none; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 15px; }
+  .side-menu a:hover { color: white; }
+  .side-menu a .link-sub { font-size: 12px; opacity: 0.6; display: block; }
+  .side-menu .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 8px 0; }
+  .side-menu .info-item { background: rgba(255,255,255,0.08); padding: 10px; border-radius: 8px; }
+  .side-menu .info-item .label { font-size: 11px; opacity: 0.6; text-transform: uppercase; }
+  .side-menu .info-item .value { font-size: 16px; font-weight: 700; margin-top: 2px; }
+  .side-menu .info-item .value small { font-weight: 400; font-size: 12px; }
+
+  /* Map */
+  #map { width: 100%; height: 60vh; }
+
+  /* Legend - compact floating bar at bottom of map */
+  .legend { position: absolute; bottom: 0; left: 0; right: 0; z-index: 1000;
+    display: flex; gap: 10px; flex-wrap: wrap; padding: 6px 12px;
+    background: rgba(255,255,255,0.92); backdrop-filter: blur(4px); font-size: 11px; }
+  .legend-item { display: flex; align-items: center; gap: 3px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+  /* Sidebar / itinerary panel */
+  #sidebar { height: 40vh; overflow-y: auto; padding: 12px; background: #f0f4f8; }
+
+  /* Stop cards */
+  .stop-card { background: white; border-radius: 10px; padding: 12px 14px; margin: 8px 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer; border-left: 5px solid #2e86c1; transition: transform 0.15s; }
+  .stop-card:hover { transform: translateX(4px); }
+  .stop-card.active { border-left-color: #e67e22; background: #fef9e7; }
+  .stop-card.arrival { border-left-color: #27ae60; }
+  .stop-card.depart { border-left-color: #e74c3c; }
+  .stop-card.hard { border-left-color: #e67e22; }
+  .stop-card h3 { font-size: 14px; color: #1a5276; margin-bottom: 4px; }
+  .stop-card .meta { font-size: 11px; color: #666; margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+  .stop-card .meta span { display: inline-block; background: #eaf2f8; padding: 2px 7px; border-radius: 10px; }
+  .stop-card .meta span.warn { background: #fef3cd; }
+  .stop-card .details { font-size: 12px; color: #333; line-height: 1.5; }
+  .stop-card .accom { font-size: 11px; color: #1a7a5c; margin-top: 6px; padding: 5px 8px; background: #e8f8f5; border-radius: 6px; }
+
+  /* Map container needs relative for legend positioning */
+  #map-container { position: relative; }
+</style>
+</head>
+<body>
+
+<!-- Burger button -->
+<button class="burger" id="burgerBtn" onclick="toggleMenu()">
+  <span></span><span></span><span></span>
+</button>
+
+<!-- Title pill -->
+<!-- Menu overlay -->
+<div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+
+<!-- Side menu -->
+<div class="side-menu" id="sideMenu">
+  <h2>🌴 Samoa Cycling Trip</h2>
+
+  <div class="menu-section">
+    <h3>Trip Stats</h3>
+    <div class="info-grid">
+      <div class="info-item"><div class="label">Distance</div><div class="value">~211km</div></div>
+      <div class="info-item"><div class="label">Riding Days</div><div class="value">5</div></div>
+      <div class="info-item"><div class="label">Elevation</div><div class="value">~1,230m</div></div>
+      <div class="info-item"><div class="label">Est. Cost</div><div class="value">~$3,500 <small>2 ppl</small></div></div>
+      <div class="info-item"><div class="label">Dates</div><div class="value">Oct 3–11</div></div>
+      <div class="info-item"><div class="label">Riders</div><div class="value">2 <small>(dad+son)</small></div></div>
+    </div>
+  </div>
+
+  <div class="menu-section">
+    <h3>Timezone</h3>
+    <div class="info-grid">
+      <div class="info-item"><div class="label">Samoa</div><div class="value">UTC+13</div></div>
+      <div class="info-item"><div class="label">Canberra</div><div class="value">UTC+11</div></div>
+    </div>
+    <p style="font-size:13px;opacity:0.8;margin-top:6px;">Samoa is 2 hours ahead. Minimal jet lag!</p>
+  </div>
+
+  <div class="menu-section">
+    <h3>Pages</h3>
+    <a href="option-b.html">📋 Full Itinerary<span class="link-sub">Hour-by-hour timeline, meals, costs</span></a>
+    <a href="option-b-hotels.html">🏨 Hotel Options<span class="link-sub">3 options per stop with prices & reviews</span></a>
+    <a href="option-b.html#total-cost">💰 Pricing Breakdown<span class="link-sub">Flights, bikes, accommodation, food</span></a>
+  </div>
+
+<div class="menu-section">
+    <h3>Key Info</h3>
+    <a href="#">🚢 Ferry: No booking needed (foot passengers)<span class="link-sub">3 sailings weekdays, 2 on Saturday. SAT$10pp + $10/bike</span></a>
+    <a href="#">🚲 Bikes: Outdoor Samoa, Mulifanua<span class="link-sub">NZD$63/day. Merida Crossway. Helmet+lock+tools incl.</span></a>
+    <a href="#">🌡️ Weather: 26–30°C, humid. Water 28°C<span class="link-sub">Ride early (7-8am). Rest midday.</span></a>
+    <a href="https://cyclejourneys.co.nz/cycle-samoa/faq/" target="_blank">&#10067; FAQ (Cycle Journeys)<span class="link-sub">Common questions about cycling in Samoa</span></a>
+  </div>
+</div>
+
+<!-- Map -->
+<div id="map-container">
+  <div id="map"></div>
+  <div class="legend">
+    <div class="legend-item"><span class="legend-dot" style="background:#27ae60"></span> Start/End</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#2e86c1"></span> Overnight</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e67e22"></span> Activity</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#9b59b6"></span> Cave</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#e74c3c"></span> Must-Do</div>
+    <div class="legend-item"><span class="legend-dot" style="background:#1abc9c"></span> Snorkel</div>
+  </div>
+</div>
+
+<!-- Itinerary sidebar -->
+<div id="sidebar"></div>
+
+<script>
+function toggleMenu() {
+  document.getElementById('sideMenu').classList.toggle('open');
+  document.getElementById('menuOverlay').classList.toggle('open');
+  document.getElementById('burgerBtn').classList.toggle('open');
+}
+// Savai'i center
+const map = L.map('map').setView([-13.63, -172.35], 11);
+// Standard OSM tiles need an http(s) referrer; saved/local copies use the HOT style instead.
+const onWeb = /^https?:$/.test(location.protocol);
+L.tileLayer(onWeb ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png' : 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors' + (onWeb ? '' : ', tiles by HOT / OSM France'),
+  subdomains: 'abc',
+  maxZoom: 19
+}).addTo(map);
+
+function icon(color, size) {
+  return L.divIcon({
+    className: '',
+    html: '<div style="width:'+size+'px;height:'+size+'px;border-radius:50%;background:'+color+';border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>',
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2]
+  });
+}
+
+function numIcon(num, color) {
+  return L.divIcon({
+    className: '',
+    html: '<div style="width:28px;height:28px;border-radius:50%;background:'+color+';border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4);color:white;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;font-family:sans-serif;">'+num+'</div>',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+  });
+}
+
+// All stops & points of interest
+const stops = [
+  // === ARRIVAL (Sat 3 Oct) ===
+  {id:'airport', lat:-13.8311, lng:-172.0078, name:'Faleolo International Airport', type:'activity', day:'Arrival', num:'✈️',
+   date:'Sat 3 Oct', dist:'—', elev:'—',
+   details:'Arrive 5:35pm Saturday (Virgin Australia from Brisbane). Short taxi to Salty Lodge.',
+   accom:'—', 
+   color:'#e67e22'},
+
+  {id:'salty-night0', lat:-13.8474, lng:-172.0514, name:'Salty Lodge (Night 0)', type:'overnight', day:'Night 0', num:'0',
+   date:'Sat 3 Oct', dist:'~5km from airport', elev:'—',
+   details:'Arrive evening. Settle in. Right next to Outdoor Samoa bike depot.',
+   accom:'Salty Lodge ~AUD$100/room', 
+   color:'#27ae60'},
+
+  {id:'salty-night1', lat:-13.8474, lng:-172.0514, name:'Salty Lodge (Night 1)', type:'overnight', day:'Night 1', num:'1',
+   date:'Sun 4 Oct', dist:'—', elev:'—',
+   details:'Chill day. Can\'t pick up bikes (Sunday). Explore the area, rest up for the ride.',
+   accom:'Salty Lodge ~AUD$100/room', 
+   color:'#27ae60'},
+
+  // === FERRY TO SAVAI'I (Mon 5 Oct) ===
+  {id:'mulifanua-wharf', lat:-13.8301, lng:-172.0360, name:'Mulifanua Ferry Wharf', type:'activity', day:'Day 1', num:'⛴️',
+   date:'Mon 5 Oct 2pm', dist:'~2km from lodge', elev:'—',
+   details:'Pick up bikes from Outdoor Samoa AM. Ride to wharf. 2pm ferry to Savai\'i. ~90 min crossing. SAT$10pp + SAT$10/bike.',
+   accom:'—', 
+   color:'#e67e22'},
+
+  {id:'salelologa', lat:-13.7434, lng:-172.2186, name:'Salelologa Wharf & Market', type:'activity', day:'Day 1', num:'⚓',
+   date:'Mon 5 Oct ~3:30pm', dist:'Ferry', elev:'—',
+   details:'Ferry terminal + Main ATM on Savai\'i! Stock up on cash. Salelologa Market for snacks, bread, fruit. DMC (Samoan KFC) & Harbourside Cafe.',
+   accom:'—',
+   color:'#e67e22'},
+
+  // === RIDE DAY 1 (Mon 5 Oct) ===
+  {id:'lava', lat:-13.4663, lng:-172.3403, name:'Saleaula Lava Fields', type:'activity', day:'Day 1 en route', num:'🌋',
+   date:'Mon 5 Oct', dist:'33km from Salelologa', elev:'—',
+   details:'Destroyed LMS Church with lava frozen through arches. Virgin\'s Grave. Walk through dramatic lava landscape. Entry SAT$5 pp. ~45min stop.',
+   accom:'—', 
+   color:'#e67e22'},
+
+  {id:'manase', lat:-13.4485, lng:-172.3798, name:'Manase (Night 2)', type:'overnight', day:'Day 1', num:'2',
+   date:'Mon 5 Oct', dist:'56km', elev:'170m ✅',
+   details:'Arrive ~evening. Manase Beach swim & snorkel — calm turquoise lagoon, coral, tropical fish, possible turtles. Water 28°C.',
+   accom:'Tailua Beach Fales ~AUD$41pp (dinner+brekkie incl) | Jane\'s ~$32-41pp | Stevensons ~$65-130pp (pool, bar)',
+   color:'#2e86c1'},
+
+  // === RIDE DAY 2 (Tue 6 Oct) ===
+  {id:'fagamalo', lat:-13.4430, lng:-172.3533, name:'Fagamalo — Turtle Snorkelling', type:'activity', day:'Day 2 morning', num:'🐢',
+   date:'Tue 6 Oct ~07:30', dist:'6km from Manase', elev:'—',
+   details:'Dive Savai\'i (PADI) — snorkel with wild turtles inc. famous "Tomoko." ~1hr, ~SAT$50-80pp. Gear provided. Open mid-Mar to Oct — CONFIRM for early Oct! Also: Le Lagoto Resort has best pizza on Savai\'i.',
+   accom:'Savaii Lagoon Resort nearby (~AUD$55-80pp) if you want to stay',
+   color:'#1abc9c'},
+
+  {id:'peapea', lat:-13.5064, lng:-172.4780, name:'Pe\'ape\'a Cave', type:'cave', day:'Day 2 en route', num:'🦇',
+   date:'Tue 6 Oct ~10:00', dist:'~20km from Fagamalo', elev:'—',
+   details:'Lava tube with hundreds of white-rumped swiftlets navigating by clicking sounds. Guided tour, short walk in. Entry SAT$10pp. ~30min.',
+   accom:'—', 
+   color:'#9b59b6'},
+
+  {id:'dwarfcave', lat:-13.4626, lng:-172.4153, name:'Paia Dwarf\'s Cave', type:'cave', day:'Day 2 en route', num:'🕳️',
+   date:'Tue 6 Oct ~10:45', dist:'~2km from Pe\'ape\'a', elev:'—',
+   details:'Hobbit-hole entrance opens into generous cavern with underground pools of water. Local guide essential. Bring a GOOD torch! Entry SAT$10pp. ~45min.',
+   accom:'—', 
+   color:'#9b59b6'},
+
+  {id:'asau', lat:-13.5154, lng:-172.6274, name:'Asau Bay (Night 3)', type:'overnight', day:'Day 2', num:'3',
+   date:'Tue 6 Oct', dist:'38km', elev:'400m ⚠️ HILLY',
+   details:'Arrive ~1pm. Hardest ride day. Afternoon: Koko Plantation Tour (Samoan hot chocolate making + tastings). Beach swim in Asau Bay.',
+   accom:'Va-i-Moana Seaside Lodge ~AUD$35-47pp (dinner+brekkie incl) | Vaisala Hotel ~$35-50pp',
+   color:'#2e86c1'},
+
+  // === RIDE DAY 3 (Wed 7 Oct) ===
+  {id:'falealupo', lat:-13.4993, lng:-172.7879, name:'Falealupo (Night 4)', type:'overnight', day:'Day 3', num:'4',
+   date:'Wed 7 Oct', dist:'19km', elev:'200m ✅',
+   details:'EASIEST ride day! Arrive ~10am. BEST beach on Savai\'i. Activities: Canopy Walk (SAT$20), Giant\'s Cave, Star Mound, Moso\'s Footprint, House of Rock, Falealupo Nature Trail. Sunset at Cape Mulinuu (westernmost point of Samoa).',
+   accom:'Falealupo Beach Fales ~AUD$41pp (dinner+brekkie incl) ⚠️ ONLY 5 FALES — book ahead! | Se\'eti Beach Fales ~$35-41pp',
+   color:'#2e86c1'},
+
+  {id:'canopy', lat:-13.5150, lng:-172.7600, name:'Falealupo Canopy Walk', type:'activity', day:'Day 3 afternoon', num:'🌳',
+   date:'Wed 7 Oct ~1pm', dist:'Near Falealupo', elev:'—',
+   details:'Treetop walkway above rainforest canopy. SAT$20pp. Check if open (was closed for repairs 2024). Surrounding wildlife conservation area has a 400m nature walk.',
+   accom:'—', 
+   color:'#e67e22'},
+
+  {id:'mulinuu', lat:-13.5130, lng:-172.7950, name:'Cape Mulinuu — Sunset Point', type:'activity', day:'Day 3 evening', num:'🌅',
+   date:'Wed 7 Oct ~5:30pm', dist:'~2km south of Falealupo', elev:'—',
+   details:'Westernmost point of Samoa. Star Mound (ancient Polynesian site), Giant\'s Cave (lava tube cyclone shelter), Vaisuatoto Well. Then watch the sunset from the rock pools. Entry SAT$10pp. SPECTACULAR.',
+   accom:'—', 
+   color:'#e67e22'},
+
+  // === RIDE DAY 4 (Thu 8 Oct) ===
+  {id:'seaarch', lat:-13.5806, lng:-172.7119, name:'Sea Arch at Falelima', type:'activity', day:'Day 4 en route', num:'🪨',
+   date:'Thu 8 Oct ~8:45am', dist:'~15km from Falealupo', elev:'—',
+   details:'Natural rock arch on rocky shoreline. Some of the most scenic coastlines on Savai\'i. Free. Quick photo stop.',
+   accom:'—', 
+   color:'#e67e22'},
+
+  {id:'satuiatua', lat:-13.7079, lng:-172.6006, name:'Satuiatua (Night 5)', type:'overnight', day:'Day 4', num:'5',
+   date:'Thu 8 Oct', dist:'38km', elev:'301m ⚠️',
+   details:'Arrive ~10am. "BEST SNORKELLING IN ALL OF SAMOA" — swim out 30-50m to channel for spectacular coral & fish. Water 28°C. Also: Sea Arch, Lovers Leap (cliff viewpoint, SAT$2).',
+   accom:'Satuiatua Beach Resort ~AUD$44pp (dinner+brekkie incl) | Aganoa Lodge ~$200+pp (splurge, all-incl)',
+   color:'#2e86c1'},
+
+  // === RIDE DAY 5 (Fri 9 Oct) ===
+  {id:'blowholes', lat:-13.7838, lng:-172.5140, name:'Alofaaga Blowholes', type:'highlight', day:'Day 5 en route', num:'💨',
+   date:'Fri 9 Oct ~7:45am', dist:'~20km from Satuiatua', elev:'—',
+   details:'THE HIGHLIGHT OF THE TRIP! Multiple blowholes shooting seawater metres into the air. Locals throw coconuts in for extra drama! 1.5km unsealed detour. Entry SAT$5pp. Best at high tide. ~45min.',
+   accom:'—', 
+   color:'#e74c3c'},
+
+  {id:'waterfall', lat:-13.7454, lng:-172.3136, name:'Afu Aau Waterfall', type:'highlight', day:'Day 5 en route', num:'🏊',
+   date:'Fri 9 Oct ~9:45am', dist:'~15km from Blowholes', elev:'—',
+   details:'15-20m waterfall plunging into turquoise freshwater pool. SWIM HERE! Changing rooms & toilets. 650m flat dirt road from main road. Entry SAT$5pp. ~45min swimming. INCREDIBLE cooldown.',
+   accom:'—', 
+   color:'#e74c3c'},
+
+  {id:'end-ride', lat:-13.7434, lng:-172.2186, name:'Salelologa — End of Ride', type:'activity', day:'Day 5', num:'🏁',
+   date:'Fri 9 Oct ~12:30pm', dist:'13km from waterfall', elev:'—',
+   details:'Easy flat ride to Salelologa. Last stop at Salelologa Market for souvenirs & snacks. Spend your remaining Tala!',
+   accom:'—', 
+   color:'#e67e22'},
+
+  {id:'lusias', lat:-13.7480, lng:-172.2250, name:'Lusia\'s Lagoon Chalets (Night 6)', type:'overnight', day:'Night 6', num:'6',
+   date:'Fri 9 Oct', dist:'—', elev:'—',
+   details:'Overwater and garden chalets near Salelologa Wharf. Relaxed evening after final ride. No rush tomorrow — 8am ferry.',
+   accom:'Lusia\'s Lagoon Chalets ~AUD$80-120/room', 
+   color:'#27ae60'},
+
+  // === RETURN (Sat 10 Oct) ===
+  {id:'return-ferry', lat:-13.8301, lng:-172.0360, name:'Ferry — Savai\'i → Upolu', type:'activity', day:'Return Day', num:'⛴️',
+   date:'Sat 10 Oct 8:00am', dist:'—', elev:'—',
+   details:'Catch the 8am ferry from Salelologa Wharf. ~90 min crossing. Relaxed morning. Arrive Mulifanua ~9:30am. Ride to Outdoor Samoa depot. Return bikes.',
+   accom:'—', 
+   color:'#e67e22'},
+
+  {id:'salty-night7', lat:-13.8474, lng:-172.0514, name:'Salty Lodge (Night 7)', type:'overnight', day:'Night 7', num:'7',
+   date:'Sat 10 Oct', dist:'~5km from airport', elev:'—',
+   details:'Drop bikes at Outdoor Samoa. Walk to Salty Lodge. Shower. Rest. 9:15am flight tomorrow.',
+   accom:'Salty Lodge ~AUD$100/room', 
+   color:'#27ae60'},
+
+  // === FLY HOME (Sun 11 Oct) ===
+  {id:'fly-home', lat:-13.8311, lng:-172.0078, name:'Fly Home', type:'activity', day:'Departure', num:'✈️',
+   date:'Sun 11 Oct', dist:'—', elev:'—',
+   details:'Wake 7am. Taxi to Faleolo Airport (5 min). 9:15am Virgin Australia to Brisbane. Connect to Canberra. Home by ~5:50pm AEDT. Trip complete! 🌴',
+   accom:'—', 
+   color:'#e74c3c'}
+];
+
+// Route line (approximate counterclockwise path)
+const routeCoords = [
+  [-13.74335, -172.21821],
+  [-13.73956, -172.21921],
+  [-13.73533, -172.22157],
+  [-13.73271, -172.22077],
+  [-13.73258, -172.21684],
+  [-13.73128, -172.21229],
+  [-13.72939, -172.20994],
+  [-13.7271, -172.20544],
+  [-13.72377, -172.20441],
+  [-13.71791, -172.20427],
+  [-13.71542, -172.20378],
+  [-13.71251, -172.20438],
+  [-13.70983, -172.20414],
+  [-13.70661, -172.2044],
+  [-13.7033, -172.20312],
+  [-13.70098, -172.20044],
+  [-13.69794, -172.20046],
+  [-13.69548, -172.20059],
+  [-13.69346, -172.19701],
+  [-13.69097, -172.19387],
+  [-13.6888, -172.19367],
+  [-13.68591, -172.19037],
+  [-13.68447, -172.18732],
+  [-13.68263, -172.18517],
+  [-13.67697, -172.17944],
+  [-13.67428, -172.17907],
+  [-13.67241, -172.17791],
+  [-13.66896, -172.17679],
+  [-13.66604, -172.17808],
+  [-13.65718, -172.18479],
+  [-13.64984, -172.18829],
+  [-13.64404, -172.18879],
+  [-13.64302, -172.19068],
+  [-13.63943, -172.19267],
+  [-13.63702, -172.19324],
+  [-13.63558, -172.19528],
+  [-13.63213, -172.19742],
+  [-13.62978, -172.19752],
+  [-13.62857, -172.19672],
+  [-13.62667, -172.19632],
+  [-13.62477, -172.1952],
+  [-13.62277, -172.19458],
+  [-13.62102, -172.19683],
+  [-13.61815, -172.19848],
+  [-13.61555, -172.20028],
+  [-13.61266, -172.20141],
+  [-13.60989, -172.2015],
+  [-13.60599, -172.20208],
+  [-13.60223, -172.20407],
+  [-13.60043, -172.20422],
+  [-13.59666, -172.20554],
+  [-13.59472, -172.20594],
+  [-13.59261, -172.20764],
+  [-13.59133, -172.20916],
+  [-13.58787, -172.21166],
+  [-13.58261, -172.21713],
+  [-13.57328, -172.228],
+  [-13.56486, -172.23318],
+  [-13.55419, -172.23751],
+  [-13.54792, -172.24085],
+  [-13.53567, -172.25278],
+  [-13.52671, -172.25892],
+  [-13.51802, -172.26367],
+  [-13.51827, -172.26717],
+  [-13.51988, -172.28002],
+  [-13.51203, -172.29545],
+  [-13.50982, -172.30008],
+  [-13.5012, -172.30185],
+  [-13.4988, -172.30435],
+  [-13.498, -172.30969],
+  [-13.49088, -172.31805],
+  [-13.48395, -172.3189],
+  [-13.48095, -172.31741],
+  [-13.47571, -172.3173],
+  [-13.47242, -172.3178],
+  [-13.46729, -172.3175],
+  [-13.45637, -172.32506],
+  [-13.45344, -172.32883],
+  [-13.45069, -172.33331],
+  [-13.4482, -172.33723],
+  [-13.45186, -172.33656],
+  [-13.45406, -172.33651],
+  [-13.4578, -172.33765],
+  [-13.46041, -172.33803],
+  [-13.46287, -172.33869],
+  [-13.46642, -172.34052],
+  [-13.46532, -172.34027],
+  [-13.46246, -172.33861],
+  [-13.45988, -172.33773],
+  [-13.45691, -172.33762],
+  [-13.45377, -172.3363],
+  [-13.45108, -172.33683],
+  [-13.44765, -172.33783],
+  [-13.44513, -172.3413],
+  [-13.44269, -172.34672],
+  [-13.44146, -172.35082],
+  [-13.44093, -172.35498],
+  [-13.44268, -172.35792],
+  [-13.44436, -172.3595],
+  [-13.44701, -172.36092],
+  [-13.44888, -172.36202],
+  [-13.44976, -172.36328],
+  [-13.44938, -172.3665],
+  [-13.44931, -172.36983],
+  [-13.44876, -172.37387],
+  [-13.44719, -172.37787],
+  [-13.44665, -172.38205],
+  [-13.44717, -172.38614],
+  [-13.44608, -172.38736],
+  [-13.44627, -172.38772],
+  [-13.44703, -172.38826],
+  [-13.44688, -172.38962],
+  [-13.44738, -172.3905],
+  [-13.44732, -172.39212],
+  [-13.44873, -172.39552],
+  [-13.45044, -172.40066],
+  [-13.45148, -172.40391],
+  [-13.45181, -172.40696],
+  [-13.45246, -172.40796],
+  [-13.45433, -172.40854],
+  [-13.4557, -172.40941],
+  [-13.45675, -172.41147],
+  [-13.45664, -172.411],
+  [-13.45548, -172.40916],
+  [-13.45389, -172.40847],
+  [-13.45219, -172.40776],
+  [-13.45178, -172.40654],
+  [-13.45128, -172.40313],
+  [-13.4502, -172.39961],
+  [-13.44813, -172.39399],
+  [-13.44732, -172.39175],
+  [-13.44711, -172.39021],
+  [-13.44705, -172.38926],
+  [-13.44686, -172.38792],
+  [-13.44615, -172.38768],
+  [-13.44621, -172.38717],
+  [-13.4472, -172.38589],
+  [-13.4466, -172.38095],
+  [-13.4481, -172.37507],
+  [-13.44941, -172.37187],
+  [-13.44932, -172.36855],
+  [-13.44984, -172.36454],
+  [-13.4494, -172.36275],
+  [-13.4486, -172.3617],
+  [-13.44572, -172.36012],
+  [-13.44371, -172.35903],
+  [-13.44224, -172.35725],
+  [-13.44379, -172.35624],
+  [-13.44252, -172.3538],
+  [-13.44274, -172.35293],
+  [-13.44285, -172.35512],
+  [-13.44322, -172.35639],
+  [-13.44312, -172.35829],
+  [-13.44488, -172.35977],
+  [-13.44729, -172.3611],
+  [-13.44895, -172.36215],
+  [-13.44983, -172.36354],
+  [-13.44932, -172.36682],
+  [-13.44934, -172.37069],
+  [-13.44865, -172.37421],
+  [-13.44682, -172.37912],
+  [-13.44671, -172.38354],
+  [-13.44704, -172.38645],
+  [-13.44604, -172.38753],
+  [-13.44659, -172.38774],
+  [-13.44712, -172.38864],
+  [-13.44685, -172.3899],
+  [-13.44746, -172.39079],
+  [-13.44751, -172.3928],
+  [-13.44978, -172.39827],
+  [-13.45069, -172.40168],
+  [-13.45166, -172.40487],
+  [-13.45188, -172.40725],
+  [-13.45298, -172.40826],
+  [-13.45484, -172.40873],
+  [-13.45616, -172.41011],
+  [-13.45704, -172.41215],
+  [-13.45848, -172.41422],
+  [-13.45961, -172.41657],
+  [-13.4618, -172.41759],
+  [-13.46351, -172.41745],
+  [-13.46554, -172.41723],
+  [-13.46767, -172.41649],
+  [-13.47017, -172.41723],
+  [-13.47327, -172.41658],
+  [-13.47334, -172.41472],
+  [-13.47327, -172.41658],
+  [-13.47017, -172.41723],
+  [-13.46767, -172.41649],
+  [-13.46554, -172.41723],
+  [-13.46351, -172.41745],
+  [-13.46346, -172.41855],
+  [-13.46503, -172.41908],
+  [-13.46799, -172.41946],
+  [-13.46976, -172.42005],
+  [-13.47169, -172.42144],
+  [-13.4721, -172.42257],
+  [-13.47093, -172.42392],
+  [-13.47033, -172.42478],
+  [-13.46981, -172.42591],
+  [-13.46852, -172.42708],
+  [-13.46842, -172.42824],
+  [-13.46872, -172.43072],
+  [-13.46874, -172.434],
+  [-13.46867, -172.43619],
+  [-13.46866, -172.43898],
+  [-13.46808, -172.43996],
+  [-13.46826, -172.44203],
+  [-13.4685, -172.44504],
+  [-13.46909, -172.44663],
+  [-13.46984, -172.44779],
+  [-13.46984, -172.44885],
+  [-13.46954, -172.45005],
+  [-13.46956, -172.45129],
+  [-13.47, -172.45226],
+  [-13.47124, -172.45374],
+  [-13.4721, -172.45508],
+  [-13.47284, -172.45651],
+  [-13.47345, -172.45752],
+  [-13.47387, -172.45893],
+  [-13.47458, -172.45997],
+  [-13.47523, -172.46114],
+  [-13.47724, -172.4633],
+  [-13.47968, -172.46873],
+  [-13.48385, -172.47422],
+  [-13.48696, -172.4746],
+  [-13.49034, -172.47215],
+  [-13.4942, -172.4717],
+  [-13.49745, -172.47121],
+  [-13.50188, -172.47393],
+  [-13.50404, -172.47571],
+  [-13.50624, -172.47805],
+  [-13.50729, -172.48159],
+  [-13.50887, -172.48598],
+  [-13.51135, -172.49015],
+  [-13.51373, -172.4933],
+  [-13.51588, -172.49558],
+  [-13.51815, -172.49872],
+  [-13.51978, -172.50069],
+  [-13.52103, -172.50237],
+  [-13.52273, -172.5048],
+  [-13.52518, -172.50673],
+  [-13.52808, -172.50903],
+  [-13.53136, -172.51189],
+  [-13.53412, -172.51573],
+  [-13.53672, -172.51746],
+  [-13.53938, -172.51888],
+  [-13.54126, -172.52089],
+  [-13.54027, -172.52384],
+  [-13.54017, -172.52775],
+  [-13.53847, -172.53066],
+  [-13.53744, -172.53372],
+  [-13.53584, -172.53859],
+  [-13.53646, -172.54482],
+  [-13.53722, -172.5487],
+  [-13.53763, -172.55296],
+  [-13.53723, -172.55722],
+  [-13.53665, -172.56162],
+  [-13.53675, -172.56588],
+  [-13.53789, -172.56974],
+  [-13.53915, -172.57398],
+  [-13.54035, -172.57737],
+  [-13.54055, -172.57998],
+  [-13.54106, -172.58326],
+  [-13.54193, -172.58712],
+  [-13.5425, -172.59046],
+  [-13.54311, -172.59283],
+  [-13.54237, -172.59585],
+  [-13.54315, -172.59817],
+  [-13.54281, -172.60055],
+  [-13.54109, -172.60332],
+  [-13.53923, -172.607],
+  [-13.53876, -172.60939],
+  [-13.53844, -172.61129],
+  [-13.53836, -172.61398],
+  [-13.53704, -172.61713],
+  [-13.5366, -172.6187],
+  [-13.53579, -172.62161],
+  [-13.53526, -172.62373],
+  [-13.53328, -172.62482],
+  [-13.53056, -172.62618],
+  [-13.52824, -172.62731],
+  [-13.52649, -172.62856],
+  [-13.52524, -172.63044],
+  [-13.52416, -172.63096],
+  [-13.52165, -172.63063],
+  [-13.51787, -172.63005],
+  [-13.51446, -172.63084],
+  [-13.51809, -172.63615],
+  [-13.51914, -172.63787],
+  [-13.51793, -172.63906],
+  [-13.51823, -172.64173],
+  [-13.51824, -172.64525],
+  [-13.51702, -172.65024],
+  [-13.515, -172.65281],
+  [-13.51306, -172.65497],
+  [-13.51051, -172.65634],
+  [-13.51001, -172.66002],
+  [-13.5096, -172.66575],
+  [-13.51102, -172.66759],
+  [-13.51473, -172.67434],
+  [-13.51601, -172.67641],
+  [-13.51539, -172.67901],
+  [-13.5144, -172.68292],
+  [-13.51525, -172.68655],
+  [-13.51576, -172.69228],
+  [-13.51796, -172.69697],
+  [-13.51982, -172.6999],
+  [-13.51959, -172.70355],
+  [-13.52143, -172.70673],
+  [-13.5229, -172.70912],
+  [-13.5253, -172.71027],
+  [-13.52708, -172.71221],
+  [-13.52914, -172.7148],
+  [-13.53153, -172.72],
+  [-13.53439, -172.72668],
+  [-13.53495, -172.73011],
+  [-13.53698, -172.73367],
+  [-13.53951, -172.73522],
+  [-13.53626, -172.73809],
+  [-13.53468, -172.74066],
+  [-13.53158, -172.74223],
+  [-13.52891, -172.74351],
+  [-13.528, -172.74587],
+  [-13.52537, -172.74992],
+  [-13.52262, -172.75333],
+  [-13.51998, -172.75562],
+  [-13.5162, -172.75971],
+  [-13.51394, -172.7625],
+  [-13.51074, -172.7632],
+  [-13.50815, -172.76443],
+  [-13.50484, -172.76653],
+  [-13.50127, -172.76717],
+  [-13.49703, -172.76981],
+  [-13.4946, -172.77228],
+  [-13.49309, -172.77664],
+  [-13.49401, -172.7813],
+  [-13.4944, -172.78398],
+  [-13.49788, -172.78606],
+  [-13.50098, -172.78862],
+  [-13.50345, -172.79195],
+  [-13.50658, -172.79358],
+  [-13.5083, -172.79466],
+  [-13.513, -172.79939],
+  [-13.51554, -172.80258],
+  [-13.52148, -172.79886],
+  [-13.52939, -172.79162],
+  [-13.53192, -172.78857],
+  [-13.53461, -172.78503],
+  [-13.53559, -172.7807],
+  [-13.53678, -172.7766],
+  [-13.53762, -172.77372],
+  [-13.5392, -172.76985],
+  [-13.54026, -172.76702],
+  [-13.54169, -172.76423],
+  [-13.54678, -172.75821],
+  [-13.5483, -172.75771],
+  [-13.55123, -172.7573],
+  [-13.55304, -172.75495],
+  [-13.55364, -172.7539],
+  [-13.55381, -172.75246],
+  [-13.55389, -172.7516],
+  [-13.5546, -172.75002],
+  [-13.5546, -172.74898],
+  [-13.55336, -172.74741],
+  [-13.55343, -172.74619],
+  [-13.55422, -172.74188],
+  [-13.55395, -172.74097],
+  [-13.55352, -172.74016],
+  [-13.55303, -172.73929],
+  [-13.55227, -172.73853],
+  [-13.55158, -172.73737],
+  [-13.55129, -172.73638],
+  [-13.55288, -172.73644],
+  [-13.5551, -172.73648],
+  [-13.558, -172.73726],
+  [-13.56225, -172.73776],
+  [-13.56531, -172.73696],
+  [-13.57005, -172.73628],
+  [-13.57448, -172.73276],
+  [-13.5782, -172.72887],
+  [-13.57856, -172.72652],
+  [-13.57641, -172.72323],
+  [-13.57809, -172.72014],
+  [-13.57882, -172.71697],
+  [-13.58125, -172.71375],
+  [-13.58541, -172.7131],
+  [-13.58742, -172.71502],
+  [-13.58939, -172.71984],
+  [-13.5893, -172.72214],
+  [-13.58936, -172.71946],
+  [-13.58701, -172.71373],
+  [-13.58503, -172.71326],
+  [-13.58056, -172.71368],
+  [-13.57853, -172.71814],
+  [-13.57779, -172.721],
+  [-13.57663, -172.72443],
+  [-13.57871, -172.72711],
+  [-13.5816, -172.7288],
+  [-13.58687, -172.7272],
+  [-13.59186, -172.72555],
+  [-13.59796, -172.72136],
+  [-13.60133, -172.71691],
+  [-13.60779, -172.70819],
+  [-13.61395, -172.70146],
+  [-13.61373, -172.69762],
+  [-13.61455, -172.69367],
+  [-13.61666, -172.68884],
+  [-13.62046, -172.68266],
+  [-13.62479, -172.67907],
+  [-13.63091, -172.67628],
+  [-13.63533, -172.67342],
+  [-13.63866, -172.67103],
+  [-13.641, -172.66971],
+  [-13.64327, -172.66793],
+  [-13.64551, -172.66675],
+  [-13.64761, -172.6645],
+  [-13.64906, -172.6609],
+  [-13.65104, -172.65623],
+  [-13.65338, -172.65291],
+  [-13.65781, -172.64905],
+  [-13.66101, -172.64642],
+  [-13.66572, -172.64355],
+  [-13.66916, -172.64141],
+  [-13.67286, -172.63939],
+  [-13.67685, -172.63706],
+  [-13.67825, -172.63309],
+  [-13.67903, -172.63048],
+  [-13.68022, -172.62711],
+  [-13.68207, -172.62489],
+  [-13.68508, -172.62017],
+  [-13.68693, -172.61892],
+  [-13.69037, -172.61521],
+  [-13.69305, -172.61292],
+  [-13.69481, -172.61063],
+  [-13.69794, -172.60914],
+  [-13.703, -172.60613],
+  [-13.70439, -172.60427],
+  [-13.70611, -172.60401],
+  [-13.70687, -172.60239],
+  [-13.70906, -172.59928],
+  [-13.71165, -172.59788],
+  [-13.71477, -172.59615],
+  [-13.71867, -172.59455],
+  [-13.721, -172.59221],
+  [-13.72186, -172.58975],
+  [-13.72273, -172.58758],
+  [-13.72459, -172.58231],
+  [-13.72634, -172.5797],
+  [-13.72674, -172.5762],
+  [-13.73041, -172.57182],
+  [-13.73379, -172.56937],
+  [-13.73607, -172.56649],
+  [-13.73786, -172.5618],
+  [-13.74021, -172.56035],
+  [-13.7442, -172.5565],
+  [-13.74752, -172.55381],
+  [-13.74997, -172.55008],
+  [-13.75031, -172.5483],
+  [-13.75181, -172.544],
+  [-13.75408, -172.54172],
+  [-13.75715, -172.54062],
+  [-13.761, -172.5384],
+  [-13.76346, -172.53697],
+  [-13.7657, -172.53359],
+  [-13.7667, -172.53067],
+  [-13.76705, -172.52733],
+  [-13.76825, -172.52435],
+  [-13.76986, -172.52008],
+  [-13.76952, -172.51627],
+  [-13.77075, -172.51259],
+  [-13.77284, -172.512],
+  [-13.77648, -172.51402],
+  [-13.77911, -172.51355],
+  [-13.78261, -172.51337],
+  [-13.78611, -172.51243],
+  [-13.78802, -172.51292],
+  [-13.79041, -172.51227],
+  [-13.79252, -172.51231],
+  [-13.79583, -172.50826],
+  [-13.79722, -172.50421],
+  [-13.79746, -172.50084],
+  [-13.79711, -172.49195],
+  [-13.79518, -172.48639],
+  [-13.7908, -172.48156],
+  [-13.78982, -172.47905],
+  [-13.78577, -172.47506],
+  [-13.78406, -172.47141],
+  [-13.78155, -172.46978],
+  [-13.77846, -172.46662],
+  [-13.77704, -172.46313],
+  [-13.77575, -172.4582],
+  [-13.77419, -172.44917],
+  [-13.77428, -172.44524],
+  [-13.77496, -172.44117],
+  [-13.77477, -172.43617],
+  [-13.77528, -172.43193],
+  [-13.77524, -172.42727],
+  [-13.77583, -172.41979],
+  [-13.77532, -172.41696],
+  [-13.77411, -172.4141],
+  [-13.77429, -172.41076],
+  [-13.77296, -172.40648],
+  [-13.76981, -172.40061],
+  [-13.76813, -172.39681],
+  [-13.76743, -172.39397],
+  [-13.7688, -172.39085],
+  [-13.77177, -172.3896],
+  [-13.77604, -172.38722],
+  [-13.77734, -172.38514],
+  [-13.77538, -172.38086],
+  [-13.77642, -172.37534],
+  [-13.77512, -172.37022],
+  [-13.77308, -172.36679],
+  [-13.76876, -172.36442],
+  [-13.76427, -172.36271],
+  [-13.7601, -172.36296],
+  [-13.75816, -172.36147],
+  [-13.75801, -172.35847],
+  [-13.75661, -172.35465],
+  [-13.75516, -172.34867],
+  [-13.75437, -172.34308],
+  [-13.7553, -172.3382],
+  [-13.75507, -172.33275],
+  [-13.75611, -172.32564],
+  [-13.75696, -172.32176],
+  [-13.75347, -172.31699],
+  [-13.75268, -172.31409],
+  [-13.74899, -172.31343],
+  [-13.74584, -172.31305],
+  [-13.74787, -172.31291],
+  [-13.75232, -172.31412],
+  [-13.75268, -172.31215],
+  [-13.7531, -172.3094],
+  [-13.7555, -172.30742],
+  [-13.75836, -172.3015],
+  [-13.75913, -172.29886],
+  [-13.75787, -172.29199],
+  [-13.7589, -172.28753],
+  [-13.75683, -172.2851],
+  [-13.75457, -172.28267],
+  [-13.7515, -172.27999],
+  [-13.74788, -172.27709],
+  [-13.74621, -172.27172],
+  [-13.74699, -172.26661],
+  [-13.74482, -172.26079],
+  [-13.74421, -172.25391],
+  [-13.7397, -172.24837],
+  [-13.73894, -172.24228],
+  [-13.73497, -172.2331],
+  [-13.73239, -172.2262],
+  [-13.73331, -172.22311],
+  [-13.73567, -172.22135],
+  [-13.73986, -172.21914],
+  [-13.74335, -172.21821],
+];
+
+// Route line - solid, thicker
+var routeLine = L.polyline(routeCoords, {color: '#2e86c1', weight: 5, opacity: 0.8}).addTo(map);
+
+// Add arrow markers along the route for direction
+// Use bearing between points: atan2(dlng, dlat) converted to degrees
+// Note: lat=y, lng=x, but screen coords flip y, and CSS rotation is clockwise from up (north=0)
+var arrowStep = Math.floor(routeCoords.length / 20);
+for (var ai = arrowStep; ai < routeCoords.length - arrowStep; ai += arrowStep) {
+  var p1 = routeCoords[ai - 2];
+  var p2 = routeCoords[ai + 2] || routeCoords[ai + 1] || routeCoords[ai];
+  // Bearing: north=0, east=90, south=180, west=270
+  var dLng = p2[1] - p1[1];
+  var dLat = p2[0] - p1[0];
+  var bearing = (Math.atan2(dLng, dLat) * 180 / Math.PI + 360) % 360;
+  var mid = [(p1[0]+p2[0])/2, (p1[1]+p2[1])/2];
+  var aIcon = L.divIcon({
+    className: '',
+    html: '<div style="font-size:18px;text-shadow:0 0 4px white,0 0 4px white,0 0 4px white;transform:rotate('+bearing+'deg);line-height:1;">⬆</div>',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
+  });
+  L.marker(mid, {icon: aIcon, interactive: false}).addTo(map);
+}
+
+// Ferry lines - curved arcs between Mulifanua Wharf and Salelologa
+// Both start/end at same points, but curve in opposite directions
+var wharfLat = -13.8301, wharfLng = -172.0360;
+var saleLat = -13.7434, saleLng = -172.2186;
+
+function curvedLine(lat1, lng1, lat2, lng2, bulge) {
+  var pts = [];
+  for (var t = 0; t <= 1; t += 0.05) {
+    var lat = lat1 + (lat2 - lat1) * t + bulge * Math.sin(t * Math.PI);
+    var lng = lng1 + (lng2 - lng1) * t;
+    pts.push([lat, lng]);
+  }
+  return pts;
+}
+
+// Outbound ferry (curves south)
+var outbound = curvedLine(wharfLat, wharfLng, saleLat, saleLng, -0.03);
+L.polyline(outbound, {color: '#27ae60', weight: 3, opacity: 0.7, dashArray: '8 6'}).addTo(map);
+
+// Return ferry (curves north)
+var returnLine = curvedLine(saleLat, saleLng, wharfLat, wharfLng, -0.03);
+L.polyline(returnLine, {color: '#e74c3c', weight: 3, opacity: 0.7, dashArray: '8 6'}).addTo(map);
+
+// Mulifanua area connecting line (airport → motel → wharf) - single orange line
+L.polyline([[-13.8311, -172.0078], [-13.8474, -172.0514], [-13.8301, -172.0360]], {color: '#e67e22', weight: 2, opacity: 0.7, dashArray: '4 4'}).addTo(map);
+
+// Direction arrows on ferry curves
+function addArrowAt(lat, lng, bearing, color) {
+  var ai = L.divIcon({
+    className: '',
+    html: '<div style="font-size:18px;color:'+color+';text-shadow:0 0 4px white,0 0 4px white;transform:rotate('+bearing+'deg);line-height:1;">⬆</div>',
+    iconSize: [18, 18], iconAnchor: [9, 9]
+  });
+  L.marker([lat, lng], {icon: ai, interactive: false}).addTo(map);
+}
+// Outbound arrow (on curved line, heading northwest)
+addArrowAt(outbound[10][0], outbound[10][1], 310, '#27ae60');
+// Return arrow (on curved line, heading southeast)
+addArrowAt(returnLine[10][0], returnLine[10][1], 130, '#e74c3c');
+
+// Add markers
+const markers = {};
+stops.forEach(s => {
+  let mk;
+  if (s.type === 'overnight') {
+    mk = L.marker([s.lat, s.lng], {icon: numIcon(s.num, s.color)});
+  } else if (s.type === 'highlight') {
+    mk = L.marker([s.lat, s.lng], {icon: icon(s.color, 18)});
+  } else {
+    mk = L.marker([s.lat, s.lng], {icon: icon(s.color, 14)});
+  }
+
+  let popup = '<div style="max-width:280px;font-family:sans-serif;">';
+  popup += '<h3 style="margin:0 0 6px;color:#1a5276;font-size:15px;">' + s.name + '</h3>';
+  if (s.dist !== '—') popup += '<div style="font-size:12px;color:#666;margin-bottom:4px;">📏 ' + s.dist + (s.elev !== '—' ? ' &bull; ⛰️ ' + s.elev : '') + '</div>';
+  popup += '<div style="font-size:13px;margin-bottom:6px;">' + s.details + '</div>';
+  if (s.accom && s.accom !== '—') popup += '<div style="font-size:12px;background:#e8f8f5;padding:6px 8px;border-radius:4px;margin-bottom:4px;">🏠 ' + s.accom + '</div>';
+  popup += '</div>';
+
+  mk.bindPopup(popup, {maxWidth: 300});
+  mk.addTo(map);
+  markers[s.id] = mk;
+});
+
+// Sidebar cards
+const sidebar = document.getElementById('sidebar');
+stops.forEach(s => {
+  const card = document.createElement('div');
+  const isArrival = s.id.startsWith('salty-');
+  const isDepart = s.id === 'fly-home';
+  card.className = 'stop-card' + (isArrival ? ' arrival' : '') + (isDepart ? ' depart' : '');
+  card.innerHTML = `
+    <h3>${s.num} ${s.name}</h3>
+    <div class="meta">
+      <span>${s.day}</span>
+      <span>${s.date}</span>
+      ${s.dist !== '—' ? '<span>📏 ' + s.dist + '</span>' : ''}
+      ${s.elev !== '—' ? '<span class="' + (s.elev.includes('⚠') ? 'warn' : '') + '">⛰️ ' + s.elev + '</span>' : ''}
+    </div>
+    <div class="details">${s.details}</div>
+    ${s.accom && s.accom !== '—' ? '<div class="accom">🏠 ' + s.accom + '</div>' : ''}
+    
+  `;
+  card.addEventListener('click', () => {
+    map.setView([s.lat, s.lng], 13);
+    markers[s.id].openPopup();
+    document.querySelectorAll('.stop-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+  });
+  sidebar.appendChild(card);
+});
+
+// Fit map to show everything
+map.fitBounds(L.latLngBounds(stops.map(s => [s.lat, s.lng])).pad(0.1));
+
+
+</script>
+<script src="download.js" defer></script>
+</body>
+</html>
